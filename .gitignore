@@ -1,0 +1,21 @@
+# Local user progress & study database
+ptca_study.db
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+*.db-wal
+*.db-shm
+user_notes.json
+
+# Python cache & virtual environments
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+
+# macOS / OS metadata
+.DS_Store
+Thumbs.db

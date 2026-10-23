@@ -1,0 +1,2559 @@
+import json
+import os
+
+questions = [
+    # =========================================================================
+    # A4: Broadcasting Rules & Advanced Tensor Math (PTCA-F-096 to PTCA-F-114, 19 Qs)
+    # =========================================================================
+    {
+        "id": "PTCA-F-096",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A4: Broadcasting Rules & Advanced Tensor Math",
+        "difficulty": "Easy",
+        "multi_select": False,
+        "stem": "According to PyTorch broadcasting semantics, what are the conditions required for two tensors to be broadcastable during an element-wise arithmetic operation?",
+        "code": "",
+        "options": {
+            "A": "Each tensor has at least one dimension, and when iterating over dimension sizes starting at the trailing dimension, the dimension sizes must either be equal, one of them is 1, or one of them does not exist.",
+            "B": "Both tensors must have the exact same number of dimensions (`ndim`), and each corresponding dimension must be a multiple of the other.",
+            "C": "Dimension alignment begins at the leading (leftmost) dimension `0`, and missing trailing dimensions are implicitly padded with `1`s.",
+            "D": "At least one tensor must be a 1D vector, and the total number of elements (`numel()`) of the smaller tensor must evenly divide the larger tensor."
+        },
+        "correct": ["A"],
+        "explanation": "In PyTorch (following NumPy broadcasting rules), two tensors are broadcastable if each tensor has at least 1 dimension (with special handling for 0D scalars) and, when comparing dimension sizes right-to-left starting from the trailing dimension, the sizes are either equal, one of them is 1, or one of them does not exist.",
+        "option_explanations": {
+            "A": "Correct. This is the exact formal definition of broadcasting rules in PyTorch (`modules/module_2_tensors/4_tensor_broadcasting.ipynb`).",
+            "B": "Incorrect. Tensors can have different numbers of dimensions (1s are prepended to the shorter shape), and sizes must be equal or 1, not arbitrary multiples.",
+            "C": "Incorrect. Broadcasting aligns dimensions starting from the trailing (rightmost) dimension, prepending `1`s to the leading (leftmost) side of the lower-rank tensor.",
+            "D": "Incorrect. Neither tensor needs to be 1D; multi-dimensional tensors of any rank can broadcast as long as trailing dimensions align."
+        },
+        "competency": "Understand formal PyTorch tensor broadcasting rules",
+        "source": "modules/module_2_tensors/4_tensor_broadcasting.ipynb"
+    },
+    {
+        "id": "PTCA-F-097",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A4: Broadcasting Rules & Advanced Tensor Math",
+        "difficulty": "Easy",
+        "multi_select": False,
+        "stem": "What is the shape of the resulting tensor `z` after executing the following code?",
+        "code": "import torch\n\nx = torch.empty(5, 3, 4, 1)\ny = torch.empty(3, 1, 1)\nz = x * y\nprint(z.shape)",
+        "options": {
+            "A": "torch.Size([5, 3, 4, 1])",
+            "B": "torch.Size([5, 3, 1, 1])",
+            "C": "torch.Size([3, 3, 4, 1])",
+            "D": "A RuntimeError is raised because `x` is 4D and `y` is 3D."
+        },
+        "correct": ["A"],
+        "explanation": "To compute the broadcast output shape, prepend `1` to `y`'s shape `(3, 1, 1)` to match `x`'s 4 dimensions, giving `(1, 3, 1, 1)`. Taking the maximum along each dimension between `(5, 3, 4, 1)` and `(1, 3, 1, 1)` yields `torch.Size([5, 3, 4, 1])`.",
+        "option_explanations": {
+            "A": "Correct. Aligning trailing dimensions: `max(5,1)=5`, `max(3,3)=3`, `max(4,1)=4`, `max(1,1)=1` -> `torch.Size([5, 3, 4, 1])`.",
+            "B": "Incorrect. Broadcasting takes the `max` along each dimension, not the `min` (`max(4, 1)` is `4`, not `1`).",
+            "C": "Incorrect. The leading dimension of `y` does not exist, so `1` is prepended, not `3`.",
+            "D": "Incorrect. Tensors of different ranks are broadcastable when their trailing dimensions are compatible."
+        },
+        "competency": "Calculate resulting shape of broadcast operations",
+        "source": "modules/module_2_tensors/4_tensor_broadcasting.ipynb"
+    },
+    {
+        "id": "PTCA-F-098",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A4: Broadcasting Rules & Advanced Tensor Math",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "What happens when the following code from the PyTorch broadcasting module is executed?",
+        "code": "import torch\n\nx = torch.empty(5, 2, 4, 1)\ny = torch.empty(3, 1, 1)\nz = x * y",
+        "options": {
+            "A": "It raises `RuntimeError: The size of tensor a (2) must match the size of tensor b (3) at non-singleton dimension 1`.",
+            "B": "It raises `RuntimeError: The size of tensor a (5) must match the size of tensor b (3) at non-singleton dimension 0`.",
+            "C": "It succeeds and produces a tensor of shape `torch.Size([5, 6, 4, 1])`.",
+            "D": "It succeeds by repeating `x` and `y` along dimension 1 to their least common multiple."
+        },
+        "correct": ["A"],
+        "explanation": "Aligning trailing dimensions right-to-left: 1st trailing is `1` vs `1` (OK); 2nd trailing is `4` vs `1` (OK); 3rd trailing (dimension index 1 of `x`) has size `2` in `x` and `3` in `y`. Since `2 != 3` and neither is `1`, PyTorch raises a `RuntimeError` at non-singleton dimension 1.",
+        "option_explanations": {
+            "A": "Correct. Dimension 1 (the 3rd trailing dimension) has mismatched non-singleton sizes 2 and 3.",
+            "B": "Incorrect. Because `y` only has 3 dimensions, its leading dimension aligns with index 1 of `x`, not index 0.",
+            "C": "Incorrect. Broadcasting never multiplies mismatched non-singleton dimensions.",
+            "D": "Incorrect. PyTorch does not automatically tile tensors to their least common multiple."
+        },
+        "competency": "Diagnose non-broadcastable tensor shape errors",
+        "source": "modules/module_2_tensors/4_tensor_broadcasting.ipynb"
+    },
+    {
+        "id": "PTCA-F-099",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A4: Broadcasting Rules & Advanced Tensor Math",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "Contrast the two operations `z1` and `z2` in the code snippet below. Which statement accurately describes what happens?",
+        "code": "import torch\n\ny = torch.ones(2, 2)\nx_scalar = torch.tensor(5.0)     # shape: torch.Size([])\nx_empty = torch.empty((0,))      # shape: torch.Size([0])\n\nz1 = x_scalar * y\nz2 = x_empty * y",
+        "options": {
+            "A": "`z1` succeeds and produces a `(2, 2)` tensor, whereas `z2` raises `RuntimeError: The size of tensor a (0) must match the size of tensor b (2) at non-singleton dimension 1`.",
+            "B": "Both `z1` and `z2` raise a `RuntimeError` because neither `x_scalar` nor `x_empty` has at least one non-zero dimension.",
+            "C": "Both `z1` and `z2` succeed: `z1` has shape `(2, 2)` and `z2` has shape `(2, 0)`.",
+            "D": "`z1` raises a `RuntimeError` because `x_scalar` has 0 dimensions, whereas `z2` succeeds and returns an empty `(0,)` tensor."
+        },
+        "correct": ["A"],
+        "explanation": "A 0D scalar tensor (`shape: torch.Size([])`) has 0 dimensions, so prepending `1`s to match `y`'s `(2, 2)` shape makes it `(1, 1)`, which broadcasts cleanly to `(2, 2)`. Conversely, `torch.empty((0,))` is a 1D tensor of size 0 (`shape: torch.Size([0])`). Prepending `1` gives `(1, 0)`, and at trailing dimension 1, size `0 != 2` (and `0 != 1`), raising a `RuntimeError`.",
+        "option_explanations": {
+            "A": "Correct. 0D scalars broadcast with any tensor shape, while a 1D empty tensor `(0,)` fails against `(2, 2)` at trailing dimension 1 (`0 != 2`).",
+            "B": "Incorrect. `z1` succeeds because 0D scalar tensors always broadcast across all dimensions of `y`.",
+            "C": "Incorrect. A dimension of size `0` can only broadcast with another dimension of size `0` or `1`, not `2`.",
+            "D": "Incorrect. `x_empty * y` is the exact failure case shown in `4_tensor_broadcasting.ipynb`."
+        },
+        "competency": "Distinguish 0D scalar broadcasting from 1D empty (0,) tensor broadcasting failure",
+        "source": "modules/module_2_tensors/4_tensor_broadcasting.ipynb"
+    },
+    {
+        "id": "PTCA-F-100",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A4: Broadcasting Rules & Advanced Tensor Math",
+        "difficulty": "Easy",
+        "multi_select": False,
+        "stem": "When multiplying a column vector `a` of shape `(4, 1)` and a row vector `b` of shape `(5,)`, what is the resulting shape of `a + b`?",
+        "code": "import torch\n\na = torch.arange(4).view(4, 1)\nb = torch.arange(5)\nc = a + b\nprint(c.shape)",
+        "options": {
+            "A": "torch.Size([4, 5])",
+            "B": "torch.Size([4, 1])",
+            "C": "torch.Size([5, 4])",
+            "D": "RuntimeError: sizes do not match"
+        },
+        "correct": ["A"],
+        "explanation": "`b` has shape `(5,)`. Prepending `1` gives `(1, 5)`. Broadcasting `(4, 1)` and `(1, 5)` takes `max(4, 1) = 4` along dim 0 and `max(1, 5) = 5` along dim 1, producing an outer-sum matrix of shape `torch.Size([4, 5])`.",
+        "option_explanations": {
+            "A": "Correct. `(4, 1)` and `(5,)` (treated as `(1, 5)`) broadcast to `(4, 5)`.",
+            "B": "Incorrect. The trailing dimension expands from 1 to 5.",
+            "C": "Incorrect. Dimension 0 comes from `a` (size 4) and dimension 1 comes from `b` (size 5).",
+            "D": "Incorrect. Both dimensions have a singleton `1` in one of the operands, so they broadcast cleanly."
+        },
+        "competency": "Compute outer-operation shapes using broadcasting",
+        "source": "modules/module_2_tensors/4_tensor_broadcasting.ipynb"
+    },
+    {
+        "id": "PTCA-F-101",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A4: Broadcasting Rules & Advanced Tensor Math",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "You have a batch of 32 RGB images stored as a tensor `images` of shape `(32, 3, 224, 224)` and a 1D per-channel mean tensor `mean = torch.tensor([0.485, 0.456, 0.406])` of shape `(3,)`. How must `mean` be reshaped so that `images - mean` subtracts each channel's mean across all pixels and batch items via broadcasting?",
+        "code": "import torch\n\nimages = torch.rand(32, 3, 224, 224)\nmean = torch.tensor([0.485, 0.456, 0.406])",
+        "options": {
+            "A": "`mean.view(1, 3, 1, 1)` or `mean. view(3, 1, 1)`",
+            "B": "`mean.view(1, 1, 1, 3)`",
+            "C": "No reshaping is needed; `images - mean` works directly.",
+            "D": "`mean.view(3, 1)`"
+        },
+        "correct": ["A"],
+        "explanation": "In `NCHW` format `(32, 3, 224, 224)`, the channel dimension is at index 1 (the 3rd trailing dimension). Reshaping `mean` to `(1, 3, 1, 1)` or `(3, 1, 1)` aligns size `3` with the channel dimension and places `1`s at the spatial `(H, W)` dimensions so it broadcasts across `(32, 3, 224, 224)`.",
+        "option_explanations": {
+            "A": "Correct. Both `(1, 3, 1, 1)` and `(3, 1, 1)` align `3` with the channel dimension (index 1) when matched from the trailing dimension.",
+            "B": "Incorrect. `(1, 1, 1, 3)` aligns `3` with the width dimension (`224`), raising a `RuntimeError` because `224 != 3`.",
+            "C": "Incorrect. `mean` of shape `(3,)` aligns with the trailing dimension `224`, causing a shape mismatch.",
+            "D": "Incorrect. `(3, 1)` aligns `3` with the height dimension (`224`), failing to broadcast."
+        },
+        "competency": "Reshape 1D channel statistics for NCHW tensor broadcasting",
+        "source": "modules/module_2_tensors/4_tensor_broadcasting.ipynb"
+    },
+    {
+        "id": "PTCA-F-102",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A4: Broadcasting Rules & Advanced Tensor Math",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "How does PyTorch implement broadcasting in memory when computing `z = x + y` where `x` has shape `(1000, 1000)` and `y` has shape `(1, 1000)`?",
+        "code": "",
+        "options": {
+            "A": "It expands `y` virtually by setting its stride along dimension 0 to `0` without allocating or copying duplicate memory for the 1000 rows of `y`.",
+            "B": "It calls `y.repeat(1000, 1)` internally to allocate a contiguous `(1000, 1000)` copy of `y` in memory before adding.",
+            "C": "It modifies `x` in-place to avoid allocating memory for `z`.",
+            "D": "It converts `y` into a Python list and loops over each row of `x` sequentially on the CPU."
+        },
+        "correct": ["A"],
+        "explanation": "As stated in `4_tensor_broadcasting.ipynb`, if a PyTorch operation supports broadcast, its Tensor arguments are automatically expanded to be of equal sizes *without making copies of the data* (using zero-stride views internally).",
+        "option_explanations": {
+            "A": "Correct. Broadcasting expands singleton dimensions virtually (using stride 0) without copying the underlying data.",
+            "B": "Incorrect. `repeat()` allocates new memory and copies data, whereas broadcasting avoids copying.",
+            "C": "Incorrect. Out-of-place `x + y` allocates a new output tensor `z` and leaves `x` unchanged.",
+            "D": "Incorrect. Broadcasting happens natively inside vectorized C++/CUDA kernels."
+        },
+        "competency": "Understand memory efficiency of tensor broadcasting",
+        "source": "modules/module_2_tensors/4_tensor_broadcasting.ipynb"
+    },
+    {
+        "id": "PTCA-F-103",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A4: Broadcasting Rules & Advanced Tensor Math",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "What is the result of executing the following in-place addition?",
+        "code": "import torch\n\na = torch.ones(3, 1)\nb = torch.ones(3, 4)\na.add_(b)",
+        "options": {
+            "A": "It raises `RuntimeError: output with shape [3, 1] doesn't match the broadcast shape [3, 4]`.",
+            "B": "It resizes `a` in-place to shape `(3, 4)` with all elements equal to `2.0`.",
+            "C": "It sums `b` across dimension 1 and adds the result into `a`, keeping shape `(3, 1)`.",
+            "D": "It silently ignores the last 3 columns of `b` and adds only the first column to `a`."
+        },
+        "correct": ["A"],
+        "explanation": "In-place operations (`add_`, `mul_`, `sub_`, `div_`) do not allow the target (self) tensor to change shape as a result of broadcasting. Because `a` (`[3, 1]`) and `b` (`[3, 4]`) broadcast to `[3, 4]`, which does not match `a`'s shape `[3, 1]`, PyTorch raises a `RuntimeError`.",
+        "option_explanations": {
+            "A": "Correct. An in-place operation cannot expand the shape of the target tensor `a` from `[3, 1]` to `[3, 4]`.",
+            "B": "Incorrect. In-place arithmetic never reallocates or changes the shape of the destination tensor.",
+            "C": "Incorrect. Broadcasting never implicitly reduces/sums a dimension.",
+            "D": "Incorrect. PyTorch never silently truncates mismatched dimensions."
+        },
+        "competency": "Understand broadcasting restrictions on in-place operations",
+        "source": "modules/module_2_tensors/4_tensor_broadcasting.ipynb"
+    },
+    {
+        "id": "PTCA-F-104",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A4: Broadcasting Rules & Advanced Tensor Math",
+        "difficulty": "Easy",
+        "multi_select": False,
+        "stem": "Which of the following in-place operations will succeed WITHOUT raising a broadcasting `RuntimeError`?",
+        "code": "import torch\n\nx = torch.zeros(4, 3)\ny = torch.ones(1, 3)\nz = torch.ones(2, 4, 3)",
+        "options": {
+            "A": "`x.add_(y)`",
+            "B": "`y.add_(x)`",
+            "C": "`x.add_(z)`",
+            "D": "`y.mul_(z)`"
+        },
+        "correct": ["A"],
+        "explanation": "In `x.add_(y)`, `x` has shape `(4, 3)` and `y` has shape `(1, 3)`. Their broadcast shape is `(4, 3)`, which matches the destination tensor `x`'s existing shape `(4, 3)`, so the in-place addition succeeds.",
+        "option_explanations": {
+            "A": "Correct. The broadcast shape of `(4, 3)` and `(1, 3)` is `(4, 3)`, which matches `x.shape`.",
+            "B": "Incorrect. `y.add_(x)` would require expanding `y` from `(1, 3)` to `(4, 3)` in-place, which raises a `RuntimeError`.",
+            "C": "Incorrect. `x.add_(z)` has broadcast shape `(2, 4, 3)`, which does not match `x`'s 2D shape `(4, 3)`.",
+            "D": "Incorrect. `y.mul_(z)` has broadcast shape `(2, 4, 3)`, which does not match `y`'s shape `(1, 3)`."
+        },
+        "competency": "Identify valid in-place broadcasting operations",
+        "source": "modules/module_2_tensors/4_tensor_broadcasting.ipynb"
+    },
+    {
+        "id": "PTCA-F-105",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A4: Broadcasting Rules & Advanced Tensor Math",
+        "difficulty": "Easy",
+        "multi_select": True,
+        "stem": "Which of the following Tensor methods modify the calling tensor IN-PLACE in PyTorch? (Select TWO)",
+        "code": "",
+        "options": {
+            "A": "`tensor.zero_()`",
+            "B": "`tensor.fill_(3.14)`",
+            "C": "`tensor.abs()`",
+            "D": "`tensor.to('cuda')`"
+        },
+        "correct": ["A", "B"],
+        "explanation": "In PyTorch, methods that mutate a tensor in-place are postfixed with an underscore `_`, such as `zero_()`, `fill_()`, `add_()`, `mul_()`, and `copy_()`. `tensor.abs()` and `tensor.to()` return new tensors (unless `abs_()` is used).",
+        "option_explanations": {
+            "A": "Correct. `zero_()` fills the existing tensor's storage with zeros in-place.",
+            "B": "Correct. `fill_(value)` overwrites all elements of the tensor with `value` in-place.",
+            "C": "Incorrect. `abs()` returns a new tensor; the in-place equivalent is `abs_()`.",
+            "D": "Incorrect. `Tensor.to()` is not an in-place operation; it returns a new tensor on the target device."
+        },
+        "competency": "Recognize in-place tensor operations by trailing underscore convention",
+        "source": "modules/module_2_tensors/3_tensor_operations.ipynb"
+    },
+    {
+        "id": "PTCA-F-106",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A4: Broadcasting Rules & Advanced Tensor Math",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "What is printed when the following code involving shared storage and an in-place operation is run?",
+        "code": "import torch\n\nx = torch.tensor([[1, 2], [3, 4]])\ny = x[0]\ny.mul_(10)\nprint(x[0].tolist())",
+        "options": {
+            "A": "[10, 20]",
+            "B": "[1, 2]",
+            "C": "[10, 2]",
+            "D": "A RuntimeError is raised because views cannot be modified in-place."
+        },
+        "correct": ["A"],
+        "explanation": "Basic slicing (`x[0]`) returns a view `y` that shares underlying memory storage with `x`. Calling the in-place method `y.mul_(10)` mutates that shared storage directly, updating `x[0]` to `[10, 20]`.",
+        "option_explanations": {
+            "A": "Correct. Because `y` is a view of `x[0]`, `y.mul_(10)` modifies `x`'s first row in-place.",
+            "B": "Incorrect. `y = x[0]` is a view, not a copy, so `x` is modified.",
+            "C": "Incorrect. `y` represents the entire first row `[1, 2]`, so both elements are multiplied by 10.",
+            "D": "Incorrect. Views of non-autograd tensors can be freely modified in-place."
+        },
+        "competency": "Analyze side effects of in-place operations on tensor views",
+        "source": "modules/module_2_tensors/3_tensor_operations.ipynb"
+    },
+    {
+        "id": "PTCA-F-107",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A4: Broadcasting Rules & Advanced Tensor Math",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "What is the shape of the output tensor `out` produced by `torch.matmul(A, B)` (or `A @ B`) in the code below?",
+        "code": "import torch\n\nA = torch.randn(10, 1, 4, 5)\nB = torch.randn(3, 5, 6)\nout = torch.matmul(A, B)\nprint(out.shape)",
+        "options": {
+            "A": "torch.Size([10, 3, 4, 6])",
+            "B": "torch.Size([10, 1, 4, 6])",
+            "C": "torch.Size([10, 3, 5, 5])",
+            "D": "A RuntimeError is raised because `torch.matmul` requires both tensors to have the same number of dimensions."
+        },
+        "correct": ["A"],
+        "explanation": "For N-D tensors (`N >= 3`), `torch.matmul` performs a batched matrix multiplication over the last two dimensions (`(4, 5) @ (5, 6) -> (4, 6)`) and broadcasts all leading batch dimensions (`(10, 1)` and `(3,)` broadcast to `(10, 3)`). Thus the resulting shape is `torch.Size([10, 3, 4, 6])`.",
+        "option_explanations": {
+            "A": "Correct. Leading batch dimensions `(10, 1)` and `(3,)` broadcast to `(10, 3)`, while matrix dimensions `(4, 5) @ (5, 6)` yield `(4, 6)`.",
+            "B": "Incorrect. The second batch dimension broadcasts `1` and `3` to `3`, not `1`.",
+            "C": "Incorrect. The inner dimension `5` is contracted, leaving outer matrix dimensions `(4, 6)`.",
+            "D": "Incorrect. Unlike `torch.bmm` (which strictly requires 3D tensors with matching batch size), `torch.matmul` supports arbitrary broadcastable batch dimensions."
+        },
+        "competency": "Calculate output shape of batched torch.matmul with broadcasting",
+        "source": "modules/module_2_tensors/4_tensor_broadcasting.ipynb"
+    },
+    {
+        "id": "PTCA-F-108",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A4: Broadcasting Rules & Advanced Tensor Math",
+        "difficulty": "Hard",
+        "multi_select": False,
+        "stem": "How does `torch.bmm(A, B)` differ from `torch.matmul(A, B)` when given 3D tensors `A` of shape `(1, 4, 5)` and `B` of shape `(8, 5, 6)`?",
+        "code": "import torch\n\nA = torch.randn(1, 4, 5)\nB = torch.randn(8, 5, 6)",
+        "options": {
+            "A": "`torch.matmul(A, B)` broadcasts the batch dimension to return shape `(8, 4, 6)`, whereas `torch.bmm(A, B)` raises a `RuntimeError` because `bmm` does not broadcast batch dimensions (`1 != 8`).",
+            "B": "Both `torch.bmm(A, B)` and `torch.matmul(A, B)` broadcast the batch dimension and return a tensor of shape `(8, 4, 6)`.",
+            "C": "`torch.bmm(A, B)` succeeds and returns `(8, 4, 6)`, whereas `torch.matmul(A, B)` only supports 2D matrices.",
+            "D": "Both functions raise a `RuntimeError` unless `A` is explicitly repeated with `A.repeat(8, 1, 1)`."
+        },
+        "correct": ["A"],
+        "explanation": "`torch.bmm` strictly requires two 3D tensors `(b, n, m)` and `(b, m, p)` with the *exact same* batch size `b` and does not broadcast batch dimensions. `torch.matmul` broadcasts leading batch dimensions (`1` and `8` -> `8`) and returns shape `(8, 4, 6)`.",
+        "option_explanations": {
+            "A": "Correct. `torch.bmm` does not support batch dimension broadcasting, while `torch.matmul` does.",
+            "B": "Incorrect. `torch.bmm` raises `RuntimeError: batch1 and batch2 must have same number of batches`.",
+            "C": "Incorrect. `torch.matmul` supports 1D, 2D, and higher-dimensional batched tensors.",
+            "D": "Incorrect. `torch.matmul(A, B)` works directly via batch broadcasting."
+        },
+        "competency": "Distinguish torch.matmul batch broadcasting from torch.bmm strict batch matching",
+        "source": "modules/module_2_tensors/4_tensor_broadcasting.ipynb"
+    },
+    {
+        "id": "PTCA-F-109",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A4: Broadcasting Rules & Advanced Tensor Math",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "What is the shape of `out` when `torch.matmul(x, w)` is called with a 3D input tensor `x` of shape `(16, 10, 64)` and a 2D weight matrix `w` of shape `(64, 32)`?",
+        "code": "import torch\n\nx = torch.randn(16, 10, 64)\nw = torch.randn(64, 32)\nout = torch.matmul(x, w)\nprint(out.shape)",
+        "options": {
+            "A": "torch.Size([16, 10, 32])",
+            "B": "torch.Size([16, 64, 32])",
+            "C": "torch.Size([160, 32])",
+            "D": "A RuntimeError is raised because `w` is missing a batch dimension."
+        },
+        "correct": ["A"],
+        "explanation": "When `torch.matmul` multiplies an N-D tensor `(16, 10, 64)` by a 2D matrix `(64, 32)`, `w` has a `1` prepended to its batch dimensions (`(1, 64, 32)`) and broadcasts across the leading batch dimension `16`, multiplying `(10, 64) @ (64, 32)` for each batch item to produce `torch.Size([16, 10, 32])`.",
+        "option_explanations": {
+            "A": "Correct. The last dimension `64` of `x` contracts with the first dimension `64` of `w`, preserving leading dimensions `(16, 10)` and appending `32`.",
+            "B": "Incorrect. The inner dimension `64` is contracted and `10` is preserved.",
+            "C": "Incorrect. `torch.matmul` preserves the leading batch and sequence dimensions `(16, 10)` rather than flattening them.",
+            "D": "Incorrect. `torch.matmul` automatically broadcasts 2D matrices across leading dimensions of higher-rank tensors."
+        },
+        "competency": "Determine output shape of N-D by 2D matrix multiplication",
+        "source": "modules/module_2_tensors/4_tensor_broadcasting.ipynb"
+    },
+    {
+        "id": "PTCA-F-110",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A4: Broadcasting Rules & Advanced Tensor Math",
+        "difficulty": "Easy",
+        "multi_select": False,
+        "stem": "In `modules/module_2_tensors/3_tensor_operations.ipynb`, the following element-wise comparison is performed. What are the `dtype` and `shape` of the returned tensor `res`?",
+        "code": "import torch\n\nx = torch.tensor([[1., 2.], [3., 4.]])\ny = torch.ones(1, 2)\nres = torch.eq(x, y)",
+        "options": {
+            "A": "`dtype=torch.bool`, `shape=torch.Size([2, 2])`, with values `[[True, False], [False, False]]`",
+            "B": "`dtype=torch.float32`, `shape=torch.Size([2, 2])`, with values `[[1.0, 0.0], [0.0, 0.0]]`",
+            "C": "A single Python `bool` (`False`) because the shapes `(2, 2)` and `(1, 2)` differ",
+            "D": "`dtype=torch.bool`, `shape=torch.Size([1, 2])`"
+        },
+        "correct": ["A"],
+        "explanation": "`torch.eq(x, y)` broadcasts `y` of shape `(1, 2)` (`[[1., 1.]]`) across both rows of `x` (`(2, 2)`) and performs an element-wise equality check, returning a `torch.bool` tensor of shape `(2, 2)` where only index `(0, 0)` is `True`.",
+        "option_explanations": {
+            "A": "Correct. `torch.eq` supports broadcasting and returns a `torch.bool` tensor of the broadcast shape `(2, 2)`.",
+            "B": "Incorrect. Modern PyTorch comparison ops return `torch.bool`, not `float32`.",
+            "C": "Incorrect. `torch.equal(x, y)` returns a single Python `bool`, whereas `torch.eq(x, y)` performs element-wise comparison with broadcasting.",
+            "D": "Incorrect. The broadcasted shape is `max((2, 2), (1, 2)) = (2, 2)`."
+        },
+        "competency": "Evaluate broadcasted element-wise comparison with torch.eq",
+        "source": "modules/module_2_tensors/3_tensor_operations.ipynb"
+    },
+    {
+        "id": "PTCA-F-111",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A4: Broadcasting Rules & Advanced Tensor Math",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "What is printed by the following code snippet from `3_tensor_operations.ipynb`?",
+        "code": "import torch\n\nx2 = torch.ones(2, 2) * 2\npowers2 = x2 ** torch.tensor([[1, 2], [3, 4]])\nprint(powers2.tolist())",
+        "options": {
+            "A": "[[2.0, 4.0], [8.0, 16.0]]",
+            "B": "[[2.0, 2.0], [2.0, 2.0]]",
+            "C": "[[1.0, 4.0], [9.0, 16.0]]",
+            "D": "TypeError: unsupported operand type(s) for **: 'Tensor' and 'Tensor'"
+        },
+        "correct": ["A"],
+        "explanation": "`x2` is a `(2, 2)` float tensor filled with `2.0`. The exponentiation operator `**` between two tensors of shape `(2, 2)` computes element-wise powers: $2^1=2.0, 2^2=4.0, 2^3=8.0, 2^4=16.0$.",
+        "option_explanations": {
+            "A": "Correct. Element-wise exponentiation raises each `2.0` in `x2` to the corresponding integer power `[[1, 2], [3, 4]]`.",
+            "B": "Incorrect. The exponent tensor is applied element-wise.",
+            "C": "Incorrect. The base is `2.0` (`x2`), not the exponent tensor squared.",
+            "D": "Incorrect. PyTorch tensors support element-wise tensor-to-tensor exponentiation (`**`)."
+        },
+        "competency": "Predict output of element-wise tensor arithmetic and exponentiation",
+        "source": "modules/module_2_tensors/3_tensor_operations.ipynb"
+    },
+    {
+        "id": "PTCA-F-112",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A4: Broadcasting Rules & Advanced Tensor Math",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "You want to normalize each row of a 2D tensor `X` of shape `(10, 5)` by subtracting its row mean `row_mean = X.mean(dim=1)`. Why does `X - X.mean(dim=1)` raise a `RuntimeError`, and how should you fix it?",
+        "code": "import torch\n\nX = torch.randn(10, 5)\n# Goal: subtract each row's mean from that row",
+        "options": {
+            "A": "`X.mean(dim=1)` has shape `(10,)`, which aligns with trailing dimension `5` (`10 != 5`). Using `X - X.mean(dim=1, keepdim=True)` produces shape `(10, 1)`, which broadcasts across columns.",
+            "B": "`X.mean(dim=1)` has shape `(5,)`, which fails to match `10`. Using `X.mean(dim=0)` fixes it.",
+            "C": "`mean()` returns a Python float scalar when `dim=1` is passed; wrapping it in `torch.tensor()` fixes it.",
+            "D": "PyTorch does not allow subtracting a reduced tensor from its source tensor without calling `.clone()` first."
+        },
+        "correct": ["A"],
+        "explanation": "Reducing along `dim=1` without `keepdim=True` collapses dimension 1, returning shape `(10,)`. When broadcasting `(10, 5)` and `(10,)`, `(10,)` is treated as `(1, 10)` and fails at trailing dimension 1 (`5 != 10`). Passing `keepdim=True` retains the singleton dimension `(10, 1)`, allowing clean broadcasting across the 5 columns.",
+        "option_explanations": {
+            "A": "Correct. `keepdim=True` preserves shape `(10, 1)` so trailing dimensions align properly (`5` vs `1`).",
+            "B": "Incorrect. Reducing over `dim=1` reduces the size-5 axis, leaving shape `(10,)`, not `(5,)`.",
+            "C": "Incorrect. `X.mean(dim=1)` returns a 1D Tensor of shape `(10,)`, not a Python float.",
+            "D": "Incorrect. Out-of-place subtraction with a reduced tensor does not require `.clone()`."
+        },
+        "competency": "Use keepdim=True in reductions to preserve broadcastable dimensions",
+        "source": "modules/module_2_tensors/4_tensor_broadcasting.ipynb"
+    },
+    {
+        "id": "PTCA-F-113",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A4: Broadcasting Rules & Advanced Tensor Math",
+        "difficulty": "Hard",
+        "multi_select": False,
+        "stem": "How does `tensor.expand(4, 3)` differ from `tensor.repeat(4, 1)` when `tensor` has shape `(1, 3)`?",
+        "code": "import torch\n\ntensor = torch.tensor([[10, 20, 30]])  # shape: (1, 3)\na = tensor.expand(4, 3)\nb = tensor.repeat(4, 1)",
+        "options": {
+            "A": "`expand(4, 3)` returns a zero-copy view over the same storage (with stride `0` on dim 0) and can only expand singleton (`1`) dimensions, whereas `repeat(4, 1)` allocates new memory and copies the data 4 times along dim 0.",
+            "B": "`expand(4, 3)` allocates a new contiguous tensor, whereas `repeat(4, 1)` returns a zero-copy view.",
+            "C": "`expand(4, 3)` repeats the tensor 4 times along dim 0 and 3 times along dim 1 (resulting in shape `(4, 9)`).",
+            "D": "There is no difference; `expand` and `repeat` are aliases for the exact same operation."
+        },
+        "correct": ["A"],
+        "explanation": "`Tensor.expand(*sizes)` takes the target shape `(4, 3)` and returns a new view of the `self` tensor with singleton dimensions expanded to a larger size by setting their stride to 0 (no memory allocation). `Tensor.repeat(*sizes)` takes the number of times to repeat along each dimension and copies the underlying data into a newly allocated tensor.",
+        "option_explanations": {
+            "A": "Correct. `expand` takes target dimension sizes and creates a zero-copy view (only on size-1 dims), while `repeat` takes replication counts and copies data.",
+            "B": "Incorrect. This reverses the memory behavior of `expand` and `repeat`.",
+            "C": "Incorrect. `expand` takes the desired *target shape* `(4, 3)`, whereas `repeat` takes *multipliers* along each dimension.",
+            "D": "Incorrect. Both their arguments (target sizes vs repeat counts) and memory semantics (view vs copy) differ."
+        },
+        "competency": "Contrast Tensor.expand() view semantics with Tensor.repeat() copying",
+        "source": "modules/module_2_tensors/4_tensor_broadcasting.ipynb"
+    },
+    {
+        "id": "PTCA-F-114",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A4: Broadcasting Rules & Advanced Tensor Math",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "What happens when `dst.copy_(src)` is executed in the code below?",
+        "code": "import torch\n\ndst = torch.zeros(3, 4, dtype=torch.int64)\nsrc = torch.tensor([1.9, 2.1, 3.8, 4.0], dtype=torch.float32)\ndst.copy_(src)\nprint(dst.shape, dst.dtype, dst[0].tolist())",
+        "options": {
+            "A": "`src` is broadcasted across all 3 rows and cast to `dst`'s `dtype` (`torch.int64`), printing `torch.Size([3, 4]) torch.int64 [1, 2, 3, 4]`.",
+            "B": "`dst`'s `dtype` is changed to `torch.float32` and its shape becomes `torch.Size([4])`.",
+            "C": "A `RuntimeError` is raised because `copy_()` does not support broadcasting or `dtype` casting.",
+            "D": "Only the first row `dst[0]` is updated, leaving rows 1 and 2 as zeros."
+        },
+        "correct": ["A"],
+        "explanation": "`Tensor.copy_(src)` copies the elements from `src` into `dst` in-place and returns `dst`. If `src` has a different shape, it is broadcast to `dst`'s shape `(3, 4)` before copying, and its values are automatically cast to `dst`'s existing `dtype` (`int64` truncates `1.9 -> 1`, `2.1 -> 2`, `3.8 -> 3`, `4.0 -> 4`).",
+        "option_explanations": {
+            "A": "Correct. `copy_()` broadcasts `src` to `dst.shape` and casts elements to `dst.dtype` in-place.",
+            "B": "Incorrect. `copy_()` never alters the destination tensor's shape or `dtype`.",
+            "C": "Incorrect. `copy_()` supports both broadcasting and automatic `dtype` / `device` conversion.",
+            "D": "Incorrect. Broadcasting expands `(4,)` across all 3 rows of `(3, 4)`."
+        },
+        "competency": "Understand broadcasting and dtype casting in Tensor.copy_()",
+        "source": "modules/module_2_tensors/4_tensor_broadcasting.ipynb"
+    },
+
+    # =========================================================================
+    # A5: Device Management (CPU, CUDA, MPS, XPU, torch.accelerator) (PTCA-F-115 to PTCA-F-140, 26 Qs)
+    # =========================================================================
+    {
+        "id": "PTCA-F-115",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A5: Device Management (CPU, CUDA, MPS, XPU, torch.accelerator)",
+        "difficulty": "Easy",
+        "multi_select": False,
+        "stem": "In a fresh Python session before any default device configuration is changed, what does `torch.get_default_device()` return?",
+        "code": "import torch\n\nx = torch.get_default_device()\nprint(repr(x))",
+        "options": {
+            "A": "`device(type='cpu')`",
+            "B": "`device(type='cuda', index=0)` if a GPU is present, otherwise `device(type='cpu')`",
+            "C": "`None`",
+            "D": "The string `'cpu'`"
+        },
+        "correct": ["A"],
+        "explanation": "By default, PyTorch utilizes the CPU for tensor creations and computations (`device(type='cpu')`), even on machines with an available CUDA, MPS, or XPU accelerator, unless `torch.set_default_device()` is explicitly called.",
+        "option_explanations": {
+            "A": "Correct. As shown in `modules/module_3_working_with_devices/devices.ipynb`, `torch.get_default_device()` returns `device(type='cpu')` initially.",
+            "B": "Incorrect. PyTorch does not automatically set the default device to a GPU unless `torch.set_default_device()` is called.",
+            "C": "Incorrect. It returns a `torch.device` object, not `None`.",
+            "D": "Incorrect. It returns a `torch.device` instance (`device(type='cpu')`), not a plain `str`."
+        },
+        "competency": "Identify default PyTorch device behavior with torch.get_default_device()",
+        "source": "modules/module_3_working_with_devices/devices.ipynb"
+    },
+    {
+        "id": "PTCA-F-116",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A5: Device Management (CPU, CUDA, MPS, XPU, torch.accelerator)",
+        "difficulty": "Easy",
+        "multi_select": False,
+        "stem": "Look at the following hardware-agnostic code from `modules/module_3_working_with_devices/devices.ipynb`. Which `torch.accelerator` functions are used to check for any supported hardware accelerator (such as CUDA, MPS, or XPU) and set it as the default device?",
+        "code": "import torch\n\nif ________________________:\n    torch.set_default_device(________________________)",
+        "options": {
+            "A": "`torch.accelerator.is_available()` and `torch.accelerator.current_accelerator()`",
+            "B": "`torch.cuda.is_available()` and `torch.cuda.current_device()`",
+            "C": "`torch.backends.is_available()` and `torch.backends.get_device()`",
+            "D": "`torch.device.is_accelerated()` and `torch.device.default_gpu()`"
+        },
+        "correct": ["A"],
+        "explanation": "The `torch.accelerator` API provides a unified, backend-agnostic interface across CUDA, MPS, XPU, etc. `torch.accelerator.is_available()` checks if any accelerator is available, and `torch.accelerator.current_accelerator()` returns its `torch.device` object.",
+        "option_explanations": {
+            "A": "Correct. This exact snippet appears in `devices.ipynb` to set the default device to the active accelerator.",
+            "B": "Incorrect. `torch.cuda` only checks for NVIDIA/ROCm GPUs, not Apple MPS or Intel XPU.",
+            "C": "Incorrect. `torch.backends` does not have top-level `is_available()` or `get_device()` functions.",
+            "D": "Incorrect. Neither `is_accelerated()` nor `default_gpu()` exists on `torch.device`."
+        },
+        "competency": "Use torch.accelerator API for hardware-agnostic device selection",
+        "source": "modules/module_3_working_with_devices/devices.ipynb"
+    },
+    {
+        "id": "PTCA-F-117",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A5: Device Management (CPU, CUDA, MPS, XPU, torch.accelerator)",
+        "difficulty": "Easy",
+        "multi_select": False,
+        "stem": "On an Apple Silicon Mac (M1/M2/M3/M4) running macOS with the Metal programming framework, which function checks if the MPS backend is available for GPU acceleration?",
+        "code": "",
+        "options": {
+            "A": "`torch.backends.mps.is_available()`",
+            "B": "`torch.mps.is_available()`",
+            "C": "`torch.cuda.is_mps_available()`",
+            "D": "`torch.metal.is_available()`"
+        },
+        "correct": ["A"],
+        "explanation": "As demonstrated in `modules/module_3_working_with_devices/devices.ipynb` (and while `torch.mps.is_available()` also exists in recent PyTorch versions), the canonical check taught in the course and PyTorch documentation is `torch.backends.mps.is_available()`.",
+        "option_explanations": {
+            "A": "Correct. `if torch.backends.mps.is_available(): mps_device = torch.device('mps')` is the standard pattern from `devices.ipynb`.",
+            "B": "Incorrect. In the LFD2000 curriculum (`devices.ipynb`), MPS availability is checked via `torch.backends.mps.is_available()`, contrasting with `torch.cuda.is_available()` and `torch.xpu.is_available()`.",
+            "C": "Incorrect. `torch.cuda` does not have an `is_mps_available()` function.",
+            "D": "Incorrect. There is no `torch.metal` module in PyTorch."
+        },
+        "competency": "Check Apple Silicon MPS backend availability",
+        "source": "modules/module_3_working_with_devices/devices.ipynb"
+    },
+    {
+        "id": "PTCA-F-118",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A5: Device Management (CPU, CUDA, MPS, XPU, torch.accelerator)",
+        "difficulty": "Easy",
+        "multi_select": False,
+        "stem": "When migrating PyTorch code to run on Intel GPUs, which device string and availability check are used?",
+        "code": "",
+        "options": {
+            "A": "Device `'xpu'` and `torch.xpu.is_available()`",
+            "B": "Device `'intel'` and `torch.intel.is_available()`",
+            "C": "Device `'oneapi'` and `torch.backends.oneapi.is_available()`",
+            "D": "Device `'opencl'` and `torch.opencl.is_available()`"
+        },
+        "correct": ["A"],
+        "explanation": "In PyTorch, Intel GPUs use the `xpu` device type. You check availability with `torch.xpu.is_available()` and move tensors or models using `.to('xpu')` or `device=torch.device('xpu')`.",
+        "option_explanations": {
+            "A": "Correct. `devices.ipynb` explicitly shows `torch.xpu.is_available()` and `.to('xpu')` for Intel GPUs.",
+            "B": "Incorrect. PyTorch uses `'xpu'`, not `'intel'`.",
+            "C": "Incorrect. Although Intel's underlying software stack uses oneAPI, the PyTorch device name is `'xpu'`.",
+            "D": "Incorrect. PyTorch does not use an `'opencl'` device for Intel GPUs."
+        },
+        "competency": "Configure PyTorch tensors for Intel GPU (XPU) devices",
+        "source": "modules/module_3_working_with_devices/devices.ipynb"
+    },
+    {
+        "id": "PTCA-F-119",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A5: Device Management (CPU, CUDA, MPS, XPU, torch.accelerator)",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "How does PyTorch handle AMD GPUs running on the AMD ROCm / HIP platform, and how can your code distinguish between an AMD ROCm build and an NVIDIA CUDA build at runtime?",
+        "code": "import torch\n\n# Assume a GPU is present and PyTorch was built with AMD ROCm support",
+        "options": {
+            "A": "AMD ROCm uses CUDA semantics (`torch.cuda.is_available()` returns `True` and device is `'cuda'`); you distinguish them by checking `torch.version.hip` vs `torch.version.cuda`.",
+            "B": "AMD GPUs use the `'rocm'` device string and `torch.rocm.is_available()`; `torch.cuda.is_available()` returns `False`.",
+            "C": "AMD GPUs use the `'hip'` device string and `torch.backends.hip.is_available()`.",
+            "D": "AMD GPUs use the `'xpu'` device string alongside Intel GPUs."
+        },
+        "correct": ["A"],
+        "explanation": "As detailed in `devices.ipynb` under 'AMD ROCm', AMD GPUs are used with PyTorch by simply using CUDA semantics (`torch.cuda.is_available()` returns `True`). To check whether PyTorch is running on HIP/ROCm or NVIDIA CUDA, you inspect `torch.version.hip` vs `torch.version.cuda`.",
+        "option_explanations": {
+            "A": "Correct. `devices.ipynb` shows `if torch.cuda.is_available() and torch.version.hip:` vs `elif torch.cuda.is_available() and torch.version.cuda:`.",
+            "B": "Incorrect. PyTorch intentionally reuses CUDA semantics (`'cuda'`) on ROCm so existing CUDA code runs without device string changes.",
+            "C": "Incorrect. There is no `'hip'` device type or `torch.backends.hip` in standard PyTorch.",
+            "D": "Incorrect. `'xpu'` is for Intel GPUs, not AMD GPUs."
+        },
+        "competency": "Understand AMD ROCm/HIP CUDA semantics and version inspection",
+        "source": "modules/module_3_working_with_devices/devices.ipynb"
+    },
+    {
+        "id": "PTCA-F-120",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A5: Device Management (CPU, CUDA, MPS, XPU, torch.accelerator)",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "What is the critical difference between calling `.to(device)` on a `torch.Tensor` versus calling `.to(device)` on a `torch.nn.Module`?",
+        "code": "import torch\nimport torch.nn as nn\n\ndevice = torch.device('cuda' if torch.cuda.is_available() else 'cpu')\nmodel = nn.Linear(10, 2)\nx = torch.randn(4, 10)\n\nmodel.to(device)\nx.to(device)\nout = model(x)",
+        "options": {
+            "A": "`model.to(device)` moves the module's parameters and buffers in-place, whereas `x.to(device)` returns a new tensor and leaves `x` on the CPU (so `x = x.to(device)` is required).",
+            "B": "`x.to(device)` modifies `x` in-place, whereas `model.to(device)` returns a new copy of the model and leaves `model` on the CPU.",
+            "C": "Both `model.to(device)` and `x.to(device)` operate in-place, so `out = model(x)` always succeeds on CUDA.",
+            "D": "Neither operates in-place; both `model = model.to(device)` and `x = x.to(device)` are mandatory or `model` stays on the CPU."
+        },
+        "correct": ["A"],
+        "explanation": "`nn.Module.to(device)` mutates the module in-place (moving all registered parameters and buffers to `device` and also returning `self`). In contrast, `Tensor.to(device)` does NOT modify the tensor in-place; it returns a new tensor on `device`. Thus, calling `x.to(device)` without reassigning `x = x.to(device)` leaves `x` on the CPU, causing a cross-device `RuntimeError` when `cuda` is available.",
+        "option_explanations": {
+            "A": "Correct. In `devices.ipynb`, `model.to(mps_device)` works in-place, whereas tensors require `x = x.to(mps_device)`.",
+            "B": "Incorrect. This reverses the behavior of `Tensor.to()` and `nn.Module.to()`.",
+            "C": "Incorrect. `x.to(device)` returns a new tensor; discarding its return value leaves `x` on the CPU.",
+            "D": "Incorrect. While `model = model.to(device)` is harmless (since `Module.to` returns `self`), `Module.to` modifies the module in-place."
+        },
+        "competency": "Contrast in-place nn.Module.to() with out-of-place Tensor.to()",
+        "source": "modules/module_3_working_with_devices/devices.ipynb"
+    },
+    {
+        "id": "PTCA-F-121",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A5: Device Management (CPU, CUDA, MPS, XPU, torch.accelerator)",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "Review the following code from `modules/module_3_working_with_devices/devices.ipynb` executed on a Mac with an available MPS accelerator. Why does `z = x + y` raise an exception?",
+        "code": "import torch\n\nif torch.accelerator.is_available():\n    torch.set_default_device(torch.accelerator.current_accelerator())\n\nx = torch.rand(2, 2)\ny = torch.rand(2, 2, device='cpu')\nz = x + y",
+        "options": {
+            "A": "Because `torch.set_default_device()` caused `x` to be created on `mps:0` while `y` was explicitly created on `cpu`, raising `RuntimeError: Expected all tensors to be on the same device, but found at least two devices, mps:0 and cpu!`.",
+            "B": "Because `torch.rand()` does not accept a `device` keyword argument.",
+            "C": "Because addition (`+`) is not supported on the `mps` backend.",
+            "D": "Because `torch.set_default_device()` permanently disables the `'cpu'` device for the rest of the process."
+        },
+        "correct": ["A"],
+        "explanation": "After `torch.set_default_device(torch.accelerator.current_accelerator())` is called, any tensor factory call without an explicit `device` argument (like `x = torch.rand(2, 2)`) creates the tensor on the accelerator (`mps:0`). Since `y` explicitly specifies `device='cpu'`, `x + y` attempts an operation across two different devices and raises a `RuntimeError`.",
+        "option_explanations": {
+            "A": "Correct. This exact scenario and error message are highlighted in `devices.ipynb`.",
+            "B": "Incorrect. All standard PyTorch factory functions (`rand`, `ones`, `zeros`, `empty`, `tensor`) accept `device=...`.",
+            "C": "Incorrect. Element-wise addition is fully supported on MPS when both tensors are on `mps`.",
+            "D": "Incorrect. Explicit `device='cpu'` remains valid even when the default device is changed."
+        },
+        "competency": "Diagnose cross-device RuntimeError when default device is set",
+        "source": "modules/module_3_working_with_devices/devices.ipynb"
+    },
+    {
+        "id": "PTCA-F-122",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A5: Device Management (CPU, CUDA, MPS, XPU, torch.accelerator)",
+        "difficulty": "Easy",
+        "multi_select": False,
+        "stem": "Between the two patterns below for creating a tensor on an accelerator, why is Pattern 1 preferred over Pattern 2?",
+        "code": "# Pattern 1\nx1 = torch.ones(1000, 1000, device=my_device)\n\n# Pattern 2\nx2 = torch.ones(1000, 1000).to(my_device)",
+        "options": {
+            "A": "Pattern 1 allocates the tensor directly on `my_device`, avoiding an unnecessary CPU memory allocation and host-to-device data transfer required by Pattern 2.",
+            "B": "Pattern 2 raises a `RuntimeError` if `my_device` is `'mps'` or `'xpu'`.",
+            "C": "Pattern 1 automatically sets `requires_grad=True`, whereas Pattern 2 resets `requires_grad` to `False`.",
+            "D": "Pattern 2 creates a 64-bit float tensor whereas Pattern 1 creates a 32-bit float tensor."
+        },
+        "correct": ["A"],
+        "explanation": "Passing `device=my_device` directly to a factory function (`torch.ones`, `torch.randn`, etc.) allocates memory directly on the target accelerator. Creating the tensor first without `device=` allocates it on the default device (CPU) and `.to(my_device)` then allocates a second buffer on the GPU and copies the data across the bus.",
+        "option_explanations": {
+            "A": "Correct. Direct creation on the target device avoids temporary CPU allocation and host-to-device copy overhead.",
+            "B": "Incorrect. `.to(my_device)` works across all supported devices (`cpu`, `cuda`, `mps`, `xpu`).",
+            "C": "Incorrect. Both patterns default to `requires_grad=False`.",
+            "D": "Incorrect. Both patterns use the default float dtype (`torch.float32`)."
+        },
+        "competency": "Create tensors directly on target device for performance",
+        "source": "modules/module_3_working_with_devices/devices.ipynb"
+    },
+    {
+        "id": "PTCA-F-123",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A5: Device Management (CPU, CUDA, MPS, XPU, torch.accelerator)",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "A tensor `gpu_tensor` resides on `cuda:0` and has `requires_grad=False`. What happens when you call `gpu_tensor.numpy()`, and how do you properly convert it to a NumPy array?",
+        "code": "import torch\n\n# Assume gpu_tensor is on cuda:0\ngpu_tensor = torch.ones(3, 3, device='cuda:0')",
+        "options": {
+            "A": "`gpu_tensor.numpy()` raises a `TypeError: can't convert cuda:0 device type tensor to numpy`; you must first copy it to host memory using `gpu_tensor.cpu().numpy()`.",
+            "B": "`gpu_tensor.numpy()` automatically copies the data to CPU memory and returns a NumPy `ndarray`.",
+            "C": "`gpu_tensor.numpy()` returns a zero-copy NumPy array backed directly by GPU VRAM.",
+            "D": "You must call `np.asarray(gpu_tensor)` which bypasses the device restriction."
+        },
+        "correct": ["A"],
+        "explanation": "NumPy arrays only operate on host (CPU) memory. Attempting to call `.numpy()` (or `np.asarray()`) directly on a CUDA, MPS, or XPU tensor raises `TypeError: can't convert cuda:0 device type tensor to numpy. Use Tensor.cpu() to copy the tensor to host memory first.`",
+        "option_explanations": {
+            "A": "Correct. You must move the tensor to CPU first via `.cpu().numpy()` (and `.detach()` if `requires_grad=True`).",
+            "B": "Incorrect. PyTorch never performs implicit device-to-host transfers inside `.numpy()`.",
+            "C": "Incorrect. Standard NumPy `ndarray` cannot directly address GPU VRAM.",
+            "D": "Incorrect. `np.asarray(gpu_tensor)` invokes `__array__`, which raises the same `TypeError`."
+        },
+        "competency": "Convert accelerator tensors to NumPy arrays safely",
+        "source": "modules/module_3_working_with_devices/devices.ipynb"
+    },
+    {
+        "id": "PTCA-F-124",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A5: Device Management (CPU, CUDA, MPS, XPU, torch.accelerator)",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "In the 'Best practice' section of `modules/module_3_working_with_devices/devices.ipynb`, how is `argparse` combined with `torch.cuda.is_available()` to configure `args.device` in a CLI training script?",
+        "code": "import argparse\nimport torch\n\nparser = argparse.ArgumentParser(description='PyTorch Example')\nparser.add_argument('--disable-cuda', action='store_true', help='Disable CUDA')\nargs = parser.parse_args([])\nargs.device = None",
+        "options": {
+            "A": "`if not args.disable_cuda and torch.cuda.is_available(): args.device = torch.device('cuda') else: args.device = torch.device('cpu')`",
+            "B": "`if args.disable_cuda or torch.cuda.is_available(): args.device = torch.device('cuda') else: args.device = torch.device('cpu')`",
+            "C": "`args.device = torch.device('cuda', disable=args.disable_cuda)`",
+            "D": "`torch.cuda.set_enabled(not args.disable_cuda); args.device = torch.get_default_device()`"
+        },
+        "correct": ["A"],
+        "explanation": "With `action='store_true'`, `args.disable_cuda` is `False` by default and `True` when `--disable-cuda` is passed on the command line. Checking `if not args.disable_cuda and torch.cuda.is_available():` selects `'cuda'` only when the user has not disabled CUDA and a CUDA GPU is available; otherwise it falls back to `'cpu'`.",
+        "option_explanations": {
+            "A": "Correct. This is the exact best-practice pattern presented in `devices.ipynb`.",
+            "B": "Incorrect. Using `or` would select `'cuda'` even when `--disable-cuda` was passed (or when no GPU exists!).",
+            "C": "Incorrect. `torch.device` does not accept a `disable` keyword argument.",
+            "D": "Incorrect. `torch.cuda.set_enabled` does not exist."
+        },
+        "competency": "Implement CLI device-agnostic configuration with argparse and --disable-cuda",
+        "source": "modules/module_3_working_with_devices/devices.ipynb"
+    },
+    {
+        "id": "PTCA-F-125",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A5: Device Management (CPU, CUDA, MPS, XPU, torch.accelerator)",
+        "difficulty": "Hard",
+        "multi_select": False,
+        "stem": "A custom `nn.Module` defines a helper tensor in `__init__` using a plain Python attribute `self.mask = torch.ones(10)` instead of `self.register_buffer('mask', torch.ones(10))`. What happens when `model.to('cuda')` is called and `forward(x)` runs with `x` on `'cuda'`?",
+        "code": "import torch\nimport torch.nn as nn\n\nclass MaskedLinear(nn.Module):\n    def __init__(self):\n        super().__init__()\n        self.fc = nn.Linear(10, 10)\n        self.mask = torch.ones(10)  # plain attribute, not a Parameter or Buffer\n\n    def forward(self, x):\n        return self.fc(x) * self.mask",
+        "options": {
+            "A": "`model.to('cuda')` moves `self.fc`'s parameters to `'cuda'` but leaves `self.mask` on `'cpu'`, causing a `RuntimeError` during `self.fc(x) * self.mask`.",
+            "B": "`model.to('cuda')` inspects all object attributes via `__dict__` and moves `self.mask` to `'cuda'` automatically.",
+            "C": "`self.mask` is automatically converted into an `nn.Parameter` with `requires_grad=True`.",
+            "D": "`model.to('cuda')` raises an `AttributeError` when it encounters an unregistered tensor attribute."
+        },
+        "correct": ["A"],
+        "explanation": "`nn.Module.to()` only traverses registered `nn.Parameter`s, registered buffers (`register_buffer`), and child `nn.Module`s. A plain tensor assigned to `self.mask` is not registered, so it remains on `'cpu'` when `model.to('cuda')` is called, causing a cross-device `RuntimeError` in `forward()`.",
+        "option_explanations": {
+            "A": "Correct. Only registered parameters and buffers are moved by `model.to(device)`.",
+            "B": "Incorrect. `nn.Module` only tracks `_parameters`, `_buffers`, and `_modules`, not arbitrary tensors in `__dict__`.",
+            "C": "Incorrect. Plain `torch.Tensor` attributes are not converted to `nn.Parameter`.",
+            "D": "Incorrect. Assigning a plain tensor attribute is allowed without error, which makes this a common bug."
+        },
+        "competency": "Understand how nn.Module.to() handles registered buffers vs plain tensor attributes",
+        "source": "modules/module_3_working_with_devices/devices.ipynb"
+    },
+    {
+        "id": "PTCA-F-126",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A5: Device Management (CPU, CUDA, MPS, XPU, torch.accelerator)",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "Inside a `forward(self, x)` method of an `nn.Module` (such as creating an initial hidden state for an RNN), what is the cleanest device-agnostic way to create a new zeros tensor on the exact same device and dtype as the input tensor `x`?",
+        "code": "def forward(self, x):\n    # Need a zeros tensor `h0` of shape (x.size(0), 64) on the same device and dtype as x",
+        "options": {
+            "A": "`h0 = torch.zeros(x.size(0), 64, device=x.device, dtype=x.dtype)` (or `x.new_zeros(x.size(0), 64)`)",
+            "B": "`h0 = torch.zeros(x.size(0), 64).cuda()`",
+            "C": "`h0 = torch.zeros(x.size(0), 64)`",
+            "D": "`h0 = torch.zeros_like(x, shape=(x.size(0), 64))`"
+        },
+        "correct": ["A"],
+        "explanation": "Passing `device=x.device, dtype=x.dtype` to `torch.zeros(...)` (or calling `x.new_zeros(x.size(0), 64)`) allocates `h0` directly on whatever device and dtype `x` resides on (`cpu`, `cuda:0`, `mps:0`, `xpu:0`, etc.) without hardcoding a specific hardware backend.",
+        "option_explanations": {
+            "A": "Correct. Both `torch.zeros(..., device=x.device, dtype=x.dtype)` and `x.new_zeros(...)` are device-agnostic and allocate directly on `x`'s device.",
+            "B": "Incorrect. Hardcoding `.cuda()` fails on CPU-only, MPS, or XPU machines and incurs a CPU-to-GPU copy.",
+            "C": "Incorrect. Without `device=x.device`, `torch.zeros` uses the default device (usually CPU), failing when `x` is on an accelerator.",
+            "D": "Incorrect. `torch.zeros_like(input)` does not accept a `shape` keyword argument to change the tensor's dimensions."
+        },
+        "competency": "Write device-agnostic tensor creation inside nn.Module.forward",
+        "source": "modules/module_3_working_with_devices/devices.ipynb"
+    },
+    {
+        "id": "PTCA-F-127",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A5: Device Management (CPU, CUDA, MPS, XPU, torch.accelerator)",
+        "difficulty": "Easy",
+        "multi_select": False,
+        "stem": "Which function returns the total number of available hardware accelerator devices (e.g., number of GPUs) in a backend-agnostic manner using `torch.accelerator`?",
+        "code": "",
+        "options": {
+            "A": "`torch.accelerator.device_count()`",
+            "B": "`torch.accelerator.num_devices()`",
+            "C": "`torch.device_count()`",
+            "D": "`len(torch.accelerator.devices())`"
+        },
+        "correct": ["A"],
+        "explanation": "`torch.accelerator.device_count()` returns the number of available accelerator devices on the system (mirroring `torch.cuda.device_count()` and `torch.xpu.device_count()`).",
+        "option_explanations": {
+            "A": "Correct. `torch.accelerator.device_count()` returns the count of available accelerators as an `int`.",
+            "B": "Incorrect. `num_devices()` does not exist in `torch.accelerator`.",
+            "C": "Incorrect. `device_count()` is in `torch.accelerator` (or `torch.cuda` / `torch.xpu`), not at the top-level `torch` namespace.",
+            "D": "Incorrect. `torch.accelerator.devices()` is not a valid PyTorch function."
+        },
+        "competency": "Query accelerator count using torch.accelerator.device_count()",
+        "source": "modules/module_3_working_with_devices/devices.ipynb"
+    },
+    {
+        "id": "PTCA-F-128",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A5: Device Management (CPU, CUDA, MPS, XPU, torch.accelerator)",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "According to `modules/module_3_working_with_devices/devices.ipynb`, on a multi-GPU system (`cuda:0` and `cuda:1`), which of the following operations IS permitted directly between a tensor on `cuda:0` and a tensor on `cuda:1` by default?",
+        "code": "import torch\n\n# Assume a 2-GPU machine:\nt0 = torch.ones(4, device='cuda:0')\nt1 = torch.zeros(4, device='cuda:1')",
+        "options": {
+            "A": "Copy-like operations such as `t1.copy_(t0)` or `t0.to('cuda:1')`",
+            "B": "Element-wise arithmetic such as `t0 + t1`",
+            "C": "Matrix multiplication `torch.matmul(t0, t1)`",
+            "D": "Loss computation `nn.MSELoss()(t0, t1)`"
+        },
+        "correct": ["A"],
+        "explanation": "As noted in `devices.ipynb` ('Best practice'), cross-GPU operations are not allowed by default, with the exception of `copy_()` and other methods with copy-like functionality such as `to()` and `cuda()`. Launching arithmetic or loss ops on tensors spread across `cuda:0` and `cuda:1` raises a `RuntimeError`.",
+        "option_explanations": {
+            "A": "Correct. `copy_()`, `to()`, and `cuda()` are explicitly allowed across different devices.",
+            "B": "Incorrect. `t0 + t1` raises `RuntimeError: Expected all tensors to be on the same device, but found at least two devices, cuda:0 and cuda:1!`.",
+            "C": "Incorrect. `torch.matmul` requires both operands to reside on the exact same device.",
+            "D": "Incorrect. Loss functions require predictions and targets to be on the same device."
+        },
+        "competency": "Understand cross-GPU operation restrictions and copy_() exception",
+        "source": "modules/module_3_working_with_devices/devices.ipynb"
+    },
+    {
+        "id": "PTCA-F-129",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A5: Device Management (CPU, CUDA, MPS, XPU, torch.accelerator)",
+        "difficulty": "Easy",
+        "multi_select": False,
+        "stem": "On a single-GPU CUDA machine, a tensor `t` is created with `t = torch.ones(3, device='cuda')`. What are `t.device.type` and `t.device.index`?",
+        "code": "import torch\n\n# Executed on a machine with 1 CUDA GPU:\nt = torch.ones(3, device='cuda')\nprint(t.device.type, t.device.index)",
+        "options": {
+            "A": "`'cuda'` and `0`",
+            "B": "`'cuda:0'` and `None`",
+            "C": "`'cuda'` and `None`",
+            "D": "`'gpu'` and `0`"
+        },
+        "correct": ["A"],
+        "explanation": "When a tensor is allocated on `'cuda'` without an explicit index, PyTorch places it on the currently selected CUDA device (by default index `0`). Therefore, `t.device` is `device(type='cuda', index=0)`, where `t.device.type == 'cuda'` and `t.device.index == 0`.",
+        "option_explanations": {
+            "A": "Correct. An allocated accelerator tensor always resolves to a concrete device index (`0` by default).",
+            "B": "Incorrect. `t.device.type` is `'cuda'` (without `:0`), and `t.device.index` is `0`.",
+            "C": "Incorrect. While `torch.device('cuda').index` is `None`, once a tensor `t` is actually allocated on the GPU, `t.device.index` is `0`.",
+            "D": "Incorrect. PyTorch uses `'cuda'`, not `'gpu'`, as the device type."
+        },
+        "competency": "Inspect Tensor.device.type and Tensor.device.index attributes",
+        "source": "modules/module_3_working_with_devices/devices.ipynb"
+    },
+    {
+        "id": "PTCA-F-130",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A5: Device Management (CPU, CUDA, MPS, XPU, torch.accelerator)",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "Why might the comparison `if tensor.device == torch.device('cuda'):` evaluate to `False` even when `tensor` is located on the first CUDA GPU (`cuda:0`)?",
+        "code": "import torch\n\n# Assume tensor is on GPU 0: tensor.device is device(type='cuda', index=0)\nprint(tensor.device == torch.device('cuda'))\nprint(tensor.device.type == 'cuda')",
+        "options": {
+            "A": "Because `tensor.device` has `index=0` (`device(type='cuda', index=0)`), whereas `torch.device('cuda')` has `index=None`, and `torch.device` equality requires both `type` and `index` to match.",
+            "B": "Because `tensor.device` returns a string `'cuda:0'`, which cannot be compared to a `torch.device` object.",
+            "C": "Because `==` on `torch.device` compares object identity (`is`) rather than value equality.",
+            "D": "It never evaluates to `False`; `torch.device('cuda') == torch.device('cuda:0')` is always `True`."
+        },
+        "correct": ["A"],
+        "explanation": "In PyTorch, `torch.device('cuda')` creates `device(type='cuda', index=None)`, while an allocated GPU tensor has `tensor.device == device(type='cuda', index=0)`. Because `None != 0`, `tensor.device == torch.device('cuda')` is `False`! Checking `tensor.device.type == 'cuda'` or `tensor.is_cuda` is the safe way to check if a tensor is on any CUDA GPU.",
+        "option_explanations": {
+            "A": "Correct. `torch.device('cuda') != torch.device('cuda:0')` because one has `index=None` and the other has `index=0`.",
+            "B": "Incorrect. `tensor.device` returns a `torch.device` object, not a string.",
+            "C": "Incorrect. `torch.device` implements value equality comparing `(type, index)`.",
+            "D": "Incorrect. `torch.device('cuda') == torch.device('cuda:0')` evaluates to `False` in PyTorch."
+        },
+        "competency": "Avoid torch.device index=None vs index=0 equality pitfalls",
+        "source": "modules/module_3_working_with_devices/devices.ipynb"
+    },
+    {
+        "id": "PTCA-F-131",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A5: Device Management (CPU, CUDA, MPS, XPU, torch.accelerator)",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "In a PyTorch training loop using a `DataLoader` over a CPU-resident dataset and a model moved to `device`, where should batch tensors (`images, labels`) be moved to `device`?",
+        "code": "model.to(device)\nfor images, labels in trainloader:\n    # Where and how should images and labels be moved to device?",
+        "options": {
+            "A": "Inside the batch loop before the forward pass: `images, labels = images.to(device), labels.to(device)`",
+            "B": "Only `images = images.to(device)` is needed because loss functions automatically move `labels` to match `outputs.device`.",
+            "C": "Calling `trainloader.to(device)` once before the loop moves all batches automatically.",
+            "D": "Moving `model.to(device)` automatically transfers any CPU input tensor passed into `model(images)`."
+        },
+        "correct": ["A"],
+        "explanation": "Neither `DataLoader` nor `nn.Module` nor loss functions automatically move input or target tensors across devices. Inside each iteration of the training loop, both `images` (for `model(images)`) and `labels` (for `criterion(outputs, labels)`) must be explicitly reassigned with `.to(device)`.",
+        "option_explanations": {
+            "A": "Correct. Both inputs and targets must be moved to `device` inside the training loop.",
+            "B": "Incorrect. If `outputs` is on `device` and `labels` is on CPU, `criterion(outputs, labels)` raises a cross-device `RuntimeError`.",
+            "C": "Incorrect. `DataLoader` does not have a `.to(device)` method.",
+            "D": "Incorrect. Passing a CPU tensor `images` to a GPU `model` raises a `RuntimeError`."
+        },
+        "competency": "Transfer DataLoader batches to target device in training loops",
+        "source": "modules/module_3_working_with_devices/devices.ipynb"
+    },
+    {
+        "id": "PTCA-F-132",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A5: Device Management (CPU, CUDA, MPS, XPU, torch.accelerator)",
+        "difficulty": "Hard",
+        "multi_select": False,
+        "stem": "When constructing a `torch.optim.Adam` (or `SGD` with momentum) optimizer for a model that will be trained on a GPU, why is it important to call `model.to(device)` BEFORE initializing `optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)`?",
+        "code": "model = MyModel()\n# Order A: model.to(device) -> optimizer = torch.optim.Adam(model.parameters())\n# Order B: optimizer = torch.optim.Adam(model.parameters()) -> model.to(device)",
+        "options": {
+            "A": "Because `model.to(device)` replaces parameter tensors with new device tensors; initializing the optimizer after `model.to(device)` ensures the optimizer references the GPU parameter tensors and allocates its internal state on the same device.",
+            "B": "`torch.optim.Adam` raises a `ValueError` at construction time if any parameter is on the CPU.",
+            "C": "`model.to(device)` resets all model weights to random values if an optimizer is already attached.",
+            "D": "The order does not matter because `model.to(device)` automatically updates all existing `Optimizer` instances in Python memory."
+        },
+        "correct": ["A"],
+        "explanation": "As recommended in PyTorch documentation, a model should be moved to the target device *before* constructing the optimizer so that `model.parameters()` yields the final device-resident `Parameter` objects and any optimizer state buffers (like momentum or Adam moving averages) are allocated on the right device.",
+        "option_explanations": {
+            "A": "Correct. Moving the model first guarantees the optimizer holds references to the device-resident parameters.",
+            "B": "Incorrect. Optimizers work on CPU parameters without error.",
+            "C": "Incorrect. `model.to(device)` copies parameter values to the target device; it never re-initializes weights.",
+            "D": "Incorrect. `nn.Module` has no reference to external `Optimizer` instances."
+        },
+        "competency": "Order model.to(device) before optimizer initialization",
+        "source": "modules/module_3_working_with_devices/devices.ipynb"
+    },
+    {
+        "id": "PTCA-F-133",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A5: Device Management (CPU, CUDA, MPS, XPU, torch.accelerator)",
+        "difficulty": "Easy",
+        "multi_select": False,
+        "stem": "In `modules/module_3_working_with_devices/devices.ipynb`, how can the currently selected CUDA GPU be temporarily switched for a block of tensor allocations without manually passing `device='cuda:1'` to every tensor creation call?",
+        "code": "",
+        "options": {
+            "A": "Using the `with torch.cuda.device(1):` context manager",
+            "B": "Using `with torch.device_Scope('cuda:1'):`",
+            "C": "Setting `torch.cuda.default_gpu = 1`",
+            "D": "Using `with torch.no_grad(device=1):`"
+        },
+        "correct": ["A"],
+        "explanation": "As stated in `devices.ipynb` under 'Using CUDA': '`torch.cuda` keeps track of the currently selected GPU, and all CUDA tensors you allocate will by default be created on that device if the device ID is not explicitly specified. The selected device can be changed with a `torch.cuda.device` context manager.'",
+        "option_explanations": {
+            "A": "Correct. `torch.cuda.device(index)` is a context manager that changes the currently selected CUDA GPU inside the `with` block.",
+            "B": "Incorrect. `torch.device_Scope` does not exist in PyTorch.",
+            "C": "Incorrect. `torch.cuda.default_gpu` is not a valid attribute (the function is `torch.cuda.set_device(1)`).",
+            "D": "Incorrect. `torch.no_grad()` does not accept a `device` parameter."
+        },
+        "competency": "Manage selected CUDA device using torch.cuda.device context manager",
+        "source": "modules/module_3_working_with_devices/devices.ipynb"
+    },
+    {
+        "id": "PTCA-F-134",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A5: Device Management (CPU, CUDA, MPS, XPU, torch.accelerator)",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "What does `x.to(device='cuda:0', dtype=torch.float16)` do if `x` is already on `'cuda:0'` with `dtype=torch.float16`?",
+        "code": "import torch\n\n# Assume x is already on cuda:0 with dtype=torch.float16\ny = x.to(device='cuda:0', dtype=torch.float16)",
+        "options": {
+            "A": "It returns `x` itself (`x is y` is `True`) without performing any memory allocation or copy.",
+            "B": "It always allocates a brand-new tensor on `'cuda:0'` and copies `x`'s data into it.",
+            "C": "It raises a `RuntimeError` because `x` is already on the target device.",
+            "D": "It moves `x` back to the CPU first and then copies it to `'cuda:0'`."
+        },
+        "correct": ["A"],
+        "explanation": "When a tensor already has the exact `dtype` and `device` requested in `x.to(...)` (and `copy=False`, the default), `Tensor.to()` is a no-op and returns the tensor `x` itself without copying memory.",
+        "option_explanations": {
+            "A": "Correct. `Tensor.to()` returns `self` when the target `device` and `dtype` already match (unless `copy=True` is explicitly passed).",
+            "B": "Incorrect. A new copy is only forced if `copy=True` is passed to `.to()`.",
+            "C": "Incorrect. Calling `.to()` with the current device is safe and idempotent.",
+            "D": "Incorrect. No host round-trip occurs."
+        },
+        "competency": "Understand no-op optimization of Tensor.to() when device and dtype match",
+        "source": "modules/module_3_working_with_devices/devices.ipynb"
+    },
+    {
+        "id": "PTCA-F-135",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A5: Device Management (CPU, CUDA, MPS, XPU, torch.accelerator)",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "Given a reference tensor `ref_tensor` that may be on any device (`cpu`, `cuda`, `mps`, or `xpu`) and have any floating-point `dtype`, what is the effect of calling `other_tensor = other_tensor.to(ref_tensor)`?",
+        "code": "import torch\n\nref_tensor = torch.ones(2, 2, dtype=torch.float16)\nother_tensor = torch.zeros(5, 5, dtype=torch.float32)\nother_tensor = other_tensor.to(ref_tensor)",
+        "options": {
+            "A": "`other_tensor` is converted to match both the `device` and `dtype` (`torch.float16`) of `ref_tensor`, while keeping its own shape `(5, 5)`.",
+            "B": "`other_tensor` is reshaped to `(2, 2)` and overwritten with the values of `ref_tensor`.",
+            "C": "A `TypeError` is raised because `.to()` only accepts a `torch.device` or `torch.dtype`, not a `Tensor`.",
+            "D": "`other_tensor` matches only the `device` of `ref_tensor`, keeping `dtype=torch.float32`."
+        },
+        "correct": ["A"],
+        "explanation": "`Tensor.to(other)` accepts another `Tensor` as its first argument and returns a tensor with the same `torch.dtype` and `torch.device` as `other`, while preserving the calling tensor's own shape and values.",
+        "option_explanations": {
+            "A": "Correct. Passing a tensor `ref_tensor` to `.to(ref_tensor)` copies both `ref_tensor.device` and `ref_tensor.dtype`.",
+            "B": "Incorrect. `.to(other)` never changes the tensor's shape or overwrites its data with `other`'s values.",
+            "C": "Incorrect. `Tensor.to(other, non_blocking=False, copy=False)` is one of the three official overloads of `Tensor.to`.",
+            "D": "Incorrect. Both `device` and `dtype` are matched when passing a tensor to `.to()`."
+        },
+        "competency": "Use Tensor.to(other_tensor) overload to match both device and dtype",
+        "source": "modules/module_3_working_with_devices/devices.ipynb"
+    },
+    {
+        "id": "PTCA-F-136",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A5: Device Management (CPU, CUDA, MPS, XPU, torch.accelerator)",
+        "difficulty": "Easy",
+        "multi_select": True,
+        "stem": "Which TWO of the following statements in `modules/module_3_working_with_devices/devices.ipynb` validly create a tensor `x` of 5 ones directly on the Apple MPS device (assuming `mps_device = torch.device('mps')` and MPS is available)? (Select TWO)",
+        "code": "import torch\nmps_device = torch.device('mps')",
+        "options": {
+            "A": "`x = torch.ones(5, device=mps_device)`",
+            "B": "`x = torch.ones(5, device='mps')`",
+            "C": "`x = torch.mps.ones(5)`",
+            "D": "`x = torch.ones(5).mps()`"
+        },
+        "correct": ["A", "B"],
+        "explanation": "As shown directly in `devices.ipynb`, you can pass either a `torch.device` instance (`device=mps_device`) or a device string (`device='mps'`) to `torch.ones(5, ...)`. Unlike `.cuda()` and `.cpu()`, there is no `torch.mps.ones` factory or `.mps()` convenience method on `Tensor`.",
+        "option_explanations": {
+            "A": "Correct. Passing `device=mps_device` allocates the tensor directly on the MPS device.",
+            "B": "Correct. Passing `device='mps'` as a string is equivalent and shown in `devices.ipynb`.",
+            "C": "Incorrect. `torch.mps` does not provide tensor creation factories like `ones`.",
+            "D": "Incorrect. `Tensor` has `.cpu()` and `.cuda()`, but no `.mps()` method; you must use `.to('mps')`."
+        },
+        "competency": "Create tensors directly on MPS device using torch.device or string",
+        "source": "modules/module_3_working_with_devices/devices.ipynb"
+    },
+    {
+        "id": "PTCA-F-137",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A5: Device Management (CPU, CUDA, MPS, XPU, torch.accelerator)",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "If `x = torch.ones(5, device='mps')` is on an Apple Silicon GPU and you compute `y = x * 2`, on which device does the multiplication execute and on which device is `y` stored?",
+        "code": "import torch\n\n# Assume MPS is available\nx = torch.ones(5, device='mps')\ny = x * 2\nprint(y.device)",
+        "options": {
+            "A": "The operation executes on the MPS GPU and `y` is stored on `mps:0`.",
+            "B": "Because `2` is a Python CPU integer, `x` is moved back to `'cpu'` and `y` is stored on `'cpu'`.",
+            "C": "It raises a cross-device `RuntimeError` because `2` is on `'cpu'` and `x` is on `'mps'`.",
+            "D": "The multiplication runs on the CPU and the result is copied back to `mps:0`."
+        },
+        "correct": ["A"],
+        "explanation": "As shown in `devices.ipynb` (`# Any operation happens on the GPU: y = x * 2`), Python scalars (`2`) are automatically converted/handled by the GPU kernel without raising a cross-device error, so the computation happens on the GPU and produces `y` on `mps:0`.",
+        "option_explanations": {
+            "A": "Correct. Operations on an accelerator tensor with Python scalars execute on that accelerator and return a tensor on the same device.",
+            "B": "Incorrect. Python scalars do not pull GPU tensors back to the CPU.",
+            "C": "Incorrect. Python scalars (and 0D CPU scalar tensors in most element-wise ops) can be multiplied with GPU tensors without cross-device errors.",
+            "D": "Incorrect. The multiplication is executed directly by the Metal kernel on the GPU."
+        },
+        "competency": "Understand device placement of operations on accelerator tensors",
+        "source": "modules/module_3_working_with_devices/devices.ipynb"
+    },
+    {
+        "id": "PTCA-F-138",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A5: Device Management (CPU, CUDA, MPS, XPU, torch.accelerator)",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "How can you check what device a `torch.nn.Module` instance `model` (which has at least one parameter) is currently on?",
+        "code": "import torch\nimport torch.nn as nn\n\nmodel = nn.Sequential(nn.Linear(10, 5), nn.ReLU())",
+        "options": {
+            "A": "`next(model.parameters()).device`",
+            "B": "`model.device`",
+            "C": "`torch.get_device(model)`",
+            "D": "`model.state_dict().device`"
+        },
+        "correct": ["A"],
+        "explanation": "In standard PyTorch, `nn.Module` does not have a built-in `.device` attribute (because different submodules of a model could theoretically be placed on different devices for model parallelism). To inspect the device of a model whose parameters share a single device, you check `next(model.parameters()).device`.",
+        "option_explanations": {
+            "A": "Correct. Fetching the first parameter from the `model.parameters()` iterator and checking its `.device` attribute is the standard PyTorch idiom.",
+            "B": "Incorrect. `nn.Module` does not define a `.device` attribute by default (`AttributeError`).",
+            "C": "Incorrect. `torch.get_device()` only accepts a `Tensor` (and returns an integer index for GPU tensors or `-1` for CPU), not an `nn.Module`.",
+            "D": "Incorrect. `model.state_dict()` returns an `OrderedDict`, which has no `.device` attribute."
+        },
+        "competency": "Determine the device of an nn.Module via its parameters",
+        "source": "modules/module_3_working_with_devices/devices.ipynb"
+    },
+    {
+        "id": "PTCA-F-139",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A5: Device Management (CPU, CUDA, MPS, XPU, torch.accelerator)",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "When using a `DataLoader` with `pin_memory=True` for CUDA training, what parameter can be passed to `tensor.to(device, ...)` to allow the host-to-device memory transfer to execute asynchronously with respect to the host CPU?",
+        "code": "trainloader = DataLoader(dataset, batch_size=64, pin_memory=True)\nfor x, y in trainloader:\n    x = x.to(device, ________________)",
+        "options": {
+            "A": "`non_blocking=True`",
+            "B": "`async_copy=True`",
+            "C": "`pin_memory=True`",
+            "D": "`background=True`"
+        },
+        "correct": ["A"],
+        "explanation": "When a CPU tensor resides in page-locked (pinned) memory (`pin_memory=True` on `DataLoader`), calling `x.to(device, non_blocking=True)` initiates an asynchronous DMA transfer to the CUDA device without blocking the CPU thread.",
+        "option_explanations": {
+            "A": "Correct. `non_blocking=True` in `Tensor.to()` enables asynchronous transfers from pinned host memory.",
+            "B": "Incorrect. The keyword argument in `Tensor.to()` is `non_blocking`, not `async_copy`.",
+            "C": "Incorrect. `pin_memory` is a `DataLoader` argument or `Tensor.pin_memory()` method, not an argument to `.to()`.",
+            "D": "Incorrect. `background` is not a valid argument to `Tensor.to()`."
+        },
+        "competency": "Use non_blocking=True with pinned memory for asynchronous device transfers",
+        "source": "modules/module_3_working_with_devices/devices.ipynb"
+    },
+    {
+        "id": "PTCA-F-140",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A5: Device Management (CPU, CUDA, MPS, XPU, torch.accelerator)",
+        "difficulty": "Easy",
+        "multi_select": False,
+        "stem": "What is the difference between `cpu_tensor.cuda()` and `cpu_tensor.to('cuda')`?",
+        "code": "import torch\ncpu_tensor = torch.randn(3, 3)",
+        "options": {
+            "A": "Both return a copy of `cpu_tensor` in CUDA memory, but `.to(device)` is more flexible because `device` can be parameterized as `'cpu'`, `'cuda'`, `'mps'`, or `'xpu'` for device-agnostic code.",
+            "B": "`cpu_tensor.cuda()` modifies `cpu_tensor` in-place, whereas `cpu_tensor.to('cuda')` returns a new tensor.",
+            "C": "`cpu_tensor.cuda()` only works on single-GPU systems, whereas `.to('cuda')` distributes the tensor across all GPUs.",
+            "D": "`cpu_tensor.cuda()` preserves `requires_grad`, whereas `cpu_tensor.to('cuda')` strips autograd history."
+        },
+        "correct": ["A"],
+        "explanation": "As shown in `devices.ipynb` (`gpu_tensor = cpu_tensor.to('cuda') # or gpu_tensor = cpu_tensor.cuda()`), both return a new tensor on the CUDA device. However, `.to(device)` is preferred in device-agnostic code because a single `device` variable can hold `'cpu'`, `'cuda'`, `'mps'`, or `'xpu'`.",
+        "option_explanations": {
+            "A": "Correct. Both return a new CUDA tensor, and `.to(device)` enables clean hardware-agnostic code.",
+            "B": "Incorrect. Neither `.cuda()` nor `.to('cuda')` is in-place on a `Tensor`.",
+            "C": "Incorrect. Both `.cuda(index)` and `.to('cuda:index')` target a single specified GPU.",
+            "D": "Incorrect. Both preserve autograd tracking (`CopyBackwards` / `ToCopyBackward0`)."
+        },
+        "competency": "Compare Tensor.cuda() and Tensor.to(device) for device-agnostic code",
+        "source": "modules/module_3_working_with_devices/devices.ipynb"
+    },
+
+    # =========================================================================
+    # A6: Autograd, Computational Graphs & Gradients (PTCA-F-141 to PTCA-F-166, 26 Qs)
+    # =========================================================================
+    {
+        "id": "PTCA-F-141",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A6: Autograd, Computational Graphs & Gradients",
+        "difficulty": "Easy",
+        "multi_select": False,
+        "stem": "When you create a tensor using `x = torch.randn(2, 2)`, what is the default value of `x.requires_grad`, and how can you enable gradient tracking on `x` in-place after creation?",
+        "code": "import torch\n\nx = torch.randn(2, 2)\nprint(x.requires_grad)",
+        "options": {
+            "A": "`x.requires_grad` defaults to `False`; calling `x.requires_grad_()` (or `x.requires_grad_(True)`) enables it in-place.",
+            "B": "`x.requires_grad` defaults to `True`; calling `x.no_grad_()` disables it in-place.",
+            "C": "`x.requires_grad` defaults to `False`; it cannot be changed after creation without cloning `x`.",
+            "D": "`x.requires_grad` defaults to `True` for floating-point tensors and `False` for integer tensors."
+        },
+        "correct": ["A"],
+        "explanation": "As demonstrated in `modules/module_2_tensors/3_tensor_operations.ipynb`, user-created tensors have `requires_grad=False` by default (unlike `nn.Parameter`, which defaults to `True`). Calling `x.requires_grad_()` changes an existing tensor's `requires_grad` flag to `True` in-place.",
+        "option_explanations": {
+            "A": "Correct. `requires_grad` is `False` by default on user-created tensors, and `.requires_grad_()` sets it to `True` in-place.",
+            "B": "Incorrect. Only `nn.Parameter` defaults to `requires_grad=True`; standard tensor factory functions default to `False`.",
+            "C": "Incorrect. `.requires_grad_(True)` (or `x.requires_grad = True` on a leaf tensor) updates the flag in-place.",
+            "D": "Incorrect. Even floating-point tensors created via `torch.randn` default to `requires_grad=False` unless `requires_grad=True` is passed."
+        },
+        "competency": "Understand default requires_grad state and in-place requires_grad_()",
+        "source": "modules/module_2_tensors/3_tensor_operations.ipynb"
+    },
+    {
+        "id": "PTCA-F-142",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A6: Autograd, Computational Graphs & Gradients",
+        "difficulty": "Easy",
+        "multi_select": False,
+        "stem": "In the following code from `3_tensor_operations.ipynb`, what are `x.grad_fn`, `z.grad_fn`, and `s.grad_fn`?",
+        "code": "import torch\n\nx = torch.tensor([1., 2., 3.], requires_grad=True)\ny = torch.tensor([4., 5., 6.], requires_grad=True)\nz = x + y\ns = z.sum()",
+        "options": {
+            "A": "`x.grad_fn` is `None`, `z.grad_fn` is `<AddBackward0 ...>`, and `s.grad_fn` is `<SumBackward0 ...>`.",
+            "B": "`x.grad_fn` is `<LeafBackward0 ...>`, `z.grad_fn` is `<AddBackward0 ...>`, and `s.grad_fn` is `None`.",
+            "C": "All three are `None` until `s.backward()` is called.",
+            "D": "`x.grad_fn` is `<TensorBackward0 ...>`, `z.grad_fn` is `<SumBackward0 ...>`, and `s.grad_fn` is `<AddBackward0 ...>`."
+        },
+        "correct": ["A"],
+        "explanation": "User-created leaf tensors (`x` and `y`) were not produced by an operation, so `x.grad_fn` is `None`. Intermediate tensors produced by operations on tracked tensors record the backward function that created them: `z = x + y` has `<AddBackward0>` and `s = z.sum()` has `<SumBackward0>`.",
+        "option_explanations": {
+            "A": "Correct. Leaf tensors have `grad_fn=None`, while `z` and `s` record `AddBackward0` and `SumBackward0` during the forward pass.",
+            "B": "Incorrect. Leaf tensors have `grad_fn=None`, and `s` has `<SumBackward0>`.",
+            "C": "Incorrect. PyTorch builds the dynamic computational graph during the forward pass, so `grad_fn` is populated immediately upon computing `z` and `s`.",
+            "D": "Incorrect. `z` was created by `+` (`AddBackward0`) and `s` by `.sum()` (`SumBackward0`)."
+        },
+        "competency": "Inspect grad_fn on leaf and intermediate tensors in the computational graph",
+        "source": "modules/module_2_tensors/3_tensor_operations.ipynb"
+    },
+    {
+        "id": "PTCA-F-143",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A6: Autograd, Computational Graphs & Gradients",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "Examine the exact code from `modules/module_5_understanding_pytorch_nn/2_autograd/autograd.ipynb`. What values are printed for `a.grad` and `b.grad`?",
+        "code": "import torch\n\na = torch.tensor([2., 4.], requires_grad=True)\nb = torch.tensor([3., 6.], requires_grad=True)\nc = a**3 + 2*b\nc.backward(gradient=torch.tensor([1., 1.]))\nprint(f'a.grad = {a.grad.tolist()}, b.grad = {b.grad.tolist()}')",
+        "options": {
+            "A": "`a.grad = [12.0, 48.0], b.grad = [2.0, 2.0]`",
+            "B": "`a.grad = [8.0, 64.0], b.grad = [6.0, 12.0]`",
+            "C": "`a.grad = [6.0, 12.0], b.grad = [2.0, 2.0]`",
+            "D": "`a.grad = [14.0, 50.0], b.grad = [3.0, 6.0]`"
+        },
+        "correct": ["A"],
+        "explanation": "Given $c = a^3 + 2b$, the partial derivative with respect to $a$ is $\\frac{\\partial c}{\\partial a} = 3a^2$. Evaluating at $a = [2.0, 4.0]$ gives $[3(2^2), 3(4^2)] = [12.0, 48.0]$. The partial derivative with respect to $b$ is $\\frac{\\partial c}{\\partial b} = 2$, giving $[2.0, 2.0]$.",
+        "option_explanations": {
+            "A": "Correct. $\\partial c / \\partial a = 3a^2 = [12.0, 48.0]$ and $\\partial c / \\partial b = 2 = [2.0, 2.0]$.",
+            "B": "Incorrect. `[8.0, 64.0]` and `[6.0, 12.0]` are the forward values $a^3$ and $2b$, not their derivatives.",
+            "C": "Incorrect. The derivative of $a^3$ is $3a^2$, not $3a$.",
+            "D": "Incorrect. The partial derivatives $\\partial c / \\partial a$ and $\\partial c / \\partial b$ are independent in $a^3 + 2b$."
+        },
+        "competency": "Calculate analytical gradients computed by backward() in autograd.ipynb",
+        "source": "modules/module_5_understanding_pytorch_nn/2_autograd/autograd.ipynb"
+    },
+    {
+        "id": "PTCA-F-144",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A6: Autograd, Computational Graphs & Gradients",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "In `modules/module_5_understanding_pytorch_nn/2_autograd/autograd.ipynb`, why was `gradient=torch.tensor([1., 1.])` passed to `c.backward(...)` when `c = a**3 + 2*b` had shape `(2,)`?",
+        "code": "a = torch.tensor([2., 4.], requires_grad=True)\nb = torch.tensor([3., 6.], requires_grad=True)\nc = a**3 + 2*b\nc.backward(gradient=torch.tensor([1., 1.]))",
+        "options": {
+            "A": "Because `c` is a non-scalar tensor; `.backward()` can only be called without arguments on a scalar (1-element) output, otherwise it requires a `gradient` tensor of the same shape as `c` to compute the vector-Jacobian product.",
+            "B": "Because `gradient` specifies the learning rate multiplier for each parameter.",
+            "C": "Because `c.backward()` without arguments always initializes `a.grad` and `b.grad` to zeros.",
+            "D": "Because `a` and `b` are 1D tensors; `.backward()` always requires `gradient` whenever the leaf tensors are not scalars."
+        },
+        "correct": ["A"],
+        "explanation": "PyTorch's autograd engine computes vector-Jacobian products ($v^T J$). When the output tensor (like a scalar loss) has only a single element, `backward()` implicitly uses `gradient=torch.tensor(1.0)`. When calling `.backward()` on a non-scalar tensor like `c` of shape `(2,)`, omitting `gradient` raises `RuntimeError: grad can be implicitly created only for scalar outputs`.",
+        "option_explanations": {
+            "A": "Correct. Non-scalar outputs require an explicit `gradient` argument matching the output tensor's shape.",
+            "B": "Incorrect. Learning rates are handled by `torch.optim`, not `.backward()`.",
+            "C": "Incorrect. Calling `c.backward()` without arguments on a 2-element tensor raises a `RuntimeError`.",
+            "D": "Incorrect. When the output loss is a scalar, `.backward()` requires no arguments regardless of the shapes of the leaf tensors `a` and `b`."
+        },
+        "competency": "Understand why non-scalar backward() requires the gradient argument",
+        "source": "modules/module_5_understanding_pytorch_nn/2_autograd/autograd.ipynb"
+    },
+    {
+        "id": "PTCA-F-145",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A6: Autograd, Computational Graphs & Gradients",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "In the code below, which tensors are considered leaf tensors (`is_leaf == True`), and which tensors will have their `.grad` attribute populated after `loss.backward()` completes?",
+        "code": "import torch\n\nx = torch.tensor([1.0, 2.0])                    #requires_grad=False\nw = torch.tensor([3.0, 4.0], requires_grad=True)\ny = x * w\nloss = y.sum()\nloss.backward()",
+        "options": {
+            "A": "`x` and `w` have `is_leaf == True` (`y` and `loss` have `is_leaf == False`), and only `w.grad` is populated (`x.grad`, `y.grad`, and `loss.grad` are `None`).",
+            "B": "Only `w` has `is_leaf == True`, and both `w.grad` and `y.grad` are populated.",
+            "C": "`x`, `w`, and `y` all have `is_leaf == True`, and `w.grad` and `y.grad` are populated.",
+            "D": "All four tensors have `.grad` populated after `loss.backward()`."
+        },
+        "correct": ["A"],
+        "explanation": "By convention in PyTorch, all tensors with `requires_grad=False` (like `x`) have `is_leaf == True`, and tensors with `requires_grad=True` created directly by the user (like `w`) also have `is_leaf == True`. Intermediate tensors resulting from tracked operations (`y` and `loss`) have `is_leaf == False`. During `.backward()`, gradients are only retained in `.grad` for leaf tensors that have `requires_grad=True` (unless `.retain_grad()` was called on an intermediate tensor).",
+        "option_explanations": {
+            "A": "Correct. `x` and `w` are leaves; only `w` has `requires_grad=True` and `is_leaf=True`, so only `w.grad` is populated.",
+            "B": "Incorrect. `x` also has `is_leaf == True`, and intermediate tensor `y` does not retain `.grad` unless `y.retain_grad()` is called before `backward()`.",
+            "C": "Incorrect. `y = x * w` is the result of a tracked operation, so `y.is_leaf` is `False`.",
+            "D": "Incorrect. Non-leaf tensors (`y`, `loss`) have their gradients freed after backpropagating to save memory, and `x` does not require grad."
+        },
+        "competency": "Distinguish leaf vs non-leaf tensors and default .grad retention",
+        "source": "modules/module_5_understanding_pytorch_nn/2_autograd/autograd.ipynb"
+    },
+    {
+        "id": "PTCA-F-146",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A6: Autograd, Computational Graphs & Gradients",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "If you need to inspect the gradient of the loss with respect to an intermediate (non-leaf) activation tensor `hidden` after calling `loss.backward()`, what must you do?",
+        "code": "import torch\n\nx = torch.randn(4, 10, requires_grad=True)\nw1 = torch.randn(10, 5, requires_grad=True)\nhidden = x @ w1\nloss = hidden.pow(2).sum()",
+        "options": {
+            "A": "Call `hidden.retain_grad()` before calling `loss.backward()`, then inspect `hidden.grad`.",
+            "B": "Set `hidden.requires_grad_(True)` before `loss.backward()`.",
+            "C": "Pass `retain_graph=True` to `loss.backward(retain_graph=True)`.",
+            "D": "Call `hidden.detach()` before computing `loss`."
+        },
+        "correct": ["A"],
+        "explanation": "By default, PyTorch frees the gradients of non-leaf intermediate tensors during backpropagation to conserve memory. Calling `hidden.retain_grad()` before `loss.backward()` instructs autograd to populate and keep `hidden.grad`.",
+        "option_explanations": {
+            "A": "Correct. `hidden.retain_grad()` enables `.grad` retention for non-leaf tensor `hidden`.",
+            "B": "Incorrect. `hidden` already has `requires_grad == True` (inherited from `x` and `w1`), but because `hidden.is_leaf` is `False`, its `.grad` is not saved without `retain_grad()`.",
+            "C": "Incorrect. `retain_graph=True` preserves intermediate forward buffers so `backward()` can be run again, but it does NOT populate `.grad` on non-leaf tensors.",
+            "D": "Incorrect. `hidden.detach()` severs the computational graph so no gradients flow through `hidden` at all."
+        },
+        "competency": "Retain gradients on non-leaf intermediate tensors with retain_grad()",
+        "source": "modules/module_5_understanding_pytorch_nn/2_autograd/autograd.ipynb"
+    },
+    {
+        "id": "PTCA-F-147",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A6: Autograd, Computational Graphs & Gradients",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "What is the subtle trap in the tensor initialization line below when preparing a parameter on a GPU?",
+        "code": "import torch\n\n# Assume cuda is available\nw = torch.randn(5, 3, requires_grad=True).to('cuda')\nloss = (w * 2).sum()\nloss.backward()\nprint(w.is_leaf, w.grad)",
+        "options": {
+            "A": "Because `.to('cuda')` is recorded as a differentiable operation on the CPU leaf tensor, `w` becomes a non-leaf tensor (`w.is_leaf` is `False`) and `w.grad` is `None`! You should instead use `torch.randn(5, 3, device='cuda', requires_grad=True)`.",
+            "B": "`.to('cuda')` resets `w.requires_grad` to `False`, so `loss.backward()` raises a `RuntimeError`.",
+            "C": "There is no trap; `w.is_leaf` is `True` and `w.grad` is a `(5, 3)` tensor of `2.0`s.",
+            "D": "`torch.randn` raises a `TypeError` when `requires_grad=True` is passed on the CPU."
+        },
+        "correct": ["A"],
+        "explanation": "When `torch.randn(5, 3, requires_grad=True)` is created on the CPU and *then* moved via `.to('cuda')`, the `.to('cuda')` call creates a `ToCopyBackward0` node in the autograd graph. As a result, `w` is no longer a leaf tensor (`w.is_leaf == False`, `w.grad_fn` is `<ToCopyBackward0>`), so after `loss.backward()`, `w.grad` is `None` (and PyTorch emits a UserWarning that `.grad` of a non-leaf tensor is being accessed). Creating the tensor directly on the device (`device='cuda', requires_grad=True`) or calling `.to('cuda').requires_grad_()` ensures `w` is a leaf tensor.",
+        "option_explanations": {
+            "A": "Correct. Applying `.to('cuda')` *after* setting `requires_grad=True` on a CPU tensor makes the resulting GPU tensor a non-leaf tensor with `w.grad == None`.",
+            "B": "Incorrect. `w.requires_grad` remains `True`, which is why `loss.backward()` runs—but the gradient flows back to the unnamed CPU leaf tensor rather than staying on `w`.",
+            "C": "Incorrect. `w.is_leaf` is `False` and `w.grad` is `None`.",
+            "D": "Incorrect. `torch.randn(..., requires_grad=True)` is valid."
+        },
+        "competency": "Avoid non-leaf tensor pitfall when combining requires_grad=True and .to(device)",
+        "source": "modules/module_3_working_with_devices/devices.ipynb"
+    },
+    {
+        "id": "PTCA-F-148",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A6: Autograd, Computational Graphs & Gradients",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "What happens when the following code is executed?",
+        "code": "import torch\n\nx = torch.tensor([2.0, 3.0], requires_grad=True)\ny = (x ** 2).sum()\ny.backward()\ny.backward()\nprint(x.grad)",
+        "options": {
+            "A": "The second `y.backward()` call raises `RuntimeError: Trying to backward through the graph a second time (or directly access saved tensors after they have already been freed)`.",
+            "B": "It prints `tensor([8., 12.])` because gradients accumulate across the two `backward()` calls.",
+            "C": "It prints `tensor([4., 6.])` because the second `backward()` overwrites the first.",
+            "D": "The second `y.backward()` is silently ignored because `y`'s gradients were already computed."
+        },
+        "correct": ["A"],
+        "explanation": "When `y.backward()` runs, PyTorch frees the intermediate buffers saved in the computation graph (`x` saved for `PowBackward0`) to save memory. Calling `y.backward()` a second time on the same graph without having passed `retain_graph=True` in the first call raises `RuntimeError: Trying to backward through the graph a second time`.",
+        "option_explanations": {
+            "A": "Correct. Without `y.backward(retain_graph=True)` on the first call, the saved intermediate tensors are freed and the second call raises a `RuntimeError`.",
+            "B": "Incorrect. This (`tensor([8., 12.])`) would only happen if the first call had been `y.backward(retain_graph=True)` (or if `y = (x ** 2).sum()` was recomputed in a second forward pass).",
+            "C": "Incorrect. Not only does the second `backward()` fail without `retain_graph=True`, PyTorch accumulates gradients rather than overwriting them.",
+            "D": "Incorrect. PyTorch raises a `RuntimeError`."
+        },
+        "competency": "Diagnose second backward() RuntimeError and understand retain_graph=True",
+        "source": "modules/module_5_understanding_pytorch_nn/2_autograd/autograd.ipynb"
+    },
+    {
+        "id": "PTCA-F-149",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A6: Autograd, Computational Graphs & Gradients",
+        "difficulty": "Easy",
+        "multi_select": False,
+        "stem": "What is printed when the following code executes two forward-and-backward passes without zeroing gradients?",
+        "code": "import torch\n\nw = torch.tensor([3.0], requires_grad=True)\n\nloss1 = (w * 4.0).sum()\nloss1.backward()\n\nloss2 = (w * 5.0).sum()\nloss2.backward()\n\nprint(w.grad.item())",
+        "options": {
+            "A": "9.0",
+            "B": "5.0",
+            "C": "4.0",
+            "D": "20.0"
+        },
+        "correct": ["A"],
+        "explanation": "In PyTorch, `.backward()` accumulates (adds) newly computed gradients into the leaf tensor's existing `.grad` attribute. After `loss1.backward()`, `w.grad` is `4.0`. After `loss2.backward()`, `5.0` is added to `w.grad`, resulting in `4.0 + 5.0 = 9.0`.",
+        "option_explanations": {
+            "A": "Correct. Gradients accumulate across `.backward()` calls (`4.0 + 5.0 = 9.0`) unless `w.grad.zero_()` or `optimizer.zero_grad()` is called.",
+            "B": "Incorrect. `loss2.backward()` adds `5.0` to `w.grad` rather than overwriting `4.0`.",
+            "C": "Incorrect. Both backward passes contribute to `w.grad`.",
+            "D": "Incorrect. Gradients are summed (`4 + 5`), not multiplied (`4 * 5`)."
+        },
+        "competency": "Understand gradient accumulation across multiple backward() passes",
+        "source": "modules/module_5_understanding_pytorch_nn/2_autograd/autograd.ipynb"
+    },
+    {
+        "id": "PTCA-F-150",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A6: Autograd, Computational Graphs & Gradients",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "Why does the following code raise a `RuntimeError` during `loss.backward()`?",
+        "code": "import torch\n\nx = torch.tensor([2.0, 3.0], requires_grad=True)\ny = x * 2\nz = y ** 2\ny.add_(1.0)  # in-place modification of y\nloss = z.sum()\nloss.backward()",
+        "options": {
+            "A": "Because computing the derivative of `z = y ** 2` ($\\frac{\\partial z}{\\partial y} = 2y$) requires the original forward value of `y`, which was overwritten in-place by `y.add_(1.0)`, incrementing `y._version` and triggering `RuntimeError: one of the variables needed for gradient computation has been modified by an inplace operation`.",
+            "B": "Because `add_()` is only supported on integer tensors.",
+            "C": "Because `loss` is not a scalar tensor.",
+            "D": "Because `y` is a leaf tensor and leaf tensors cannot be modified after `z` is computed."
+        },
+        "correct": ["A"],
+        "explanation": "The backward formula for `z = y ** 2` is $\\frac{\\partial z}{\\partial y} = 2y$, so `PowBackward0` saves a reference to `y` and records `y._version` during the forward pass. When `y.add_(1.0)` modifies `y` in-place before `loss.backward()`, `y._version` is incremented. During `loss.backward()`, autograd detects the version mismatch and raises `RuntimeError: one of the variables needed for gradient computation has been modified by an inplace operation`.",
+        "option_explanations": {
+            "A": "Correct. Autograd tracks in-place mutations via tensor version counters (`_version`) and errors when a saved tensor needed for backward was mutated in-place.",
+            "B": "Incorrect. `add_()` works on all numeric tensor types.",
+            "C": "Incorrect. `z.sum()` is a 0D scalar tensor.",
+            "D": "Incorrect. `y = x * 2` is a non-leaf intermediate tensor (`y.is_leaf == False`)."
+        },
+        "competency": "Diagnose autograd in-place modification RuntimeError and version counter checks",
+        "source": "modules/module_5_understanding_pytorch_nn/2_autograd/autograd.ipynb"
+    },
+    {
+        "id": "PTCA-F-151",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A6: Autograd, Computational Graphs & Gradients",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "What happens when you attempt to perform an in-place operation directly on a leaf tensor that has `requires_grad=True`, such as `w.sub_(0.01 * w.grad)` outside of a `torch.no_grad()` block?",
+        "code": "import torch\n\nw = torch.tensor([2.0, 3.0], requires_grad=True)\nloss = (w ** 2).sum()\nloss.backward()\nw.sub_(0.1 * w.grad)",
+        "options": {
+            "A": "It raises `RuntimeError: a leaf Variable that requires grad is being used in an in-place operation.` You must wrap manual in-place weight updates in `with torch.no_grad():` (or mutate `w.data`).",
+            "B": "It updates `w` in-place and automatically zeroes `w.grad`.",
+            "C": "It updates `w` in-place and adds a `SubBackward0` node to `w.grad_fn`, turning `w` into a non-leaf tensor.",
+            "D": "It silently ignores the update because `w.requires_grad` is `True`."
+        },
+        "correct": ["A"],
+        "explanation": "PyTorch forbids in-place operations on leaf tensors with `requires_grad=True` when grad mode is enabled, raising `RuntimeError: a leaf Variable that requires grad is being used in an in-place operation.` To perform a manual in-place SGD step on leaf parameters, you must wrap it in `with torch.no_grad(): w -= lr * w.grad`.",
+        "option_explanations": {
+            "A": "Correct. In-place mutation of a leaf tensor that requires grad is prohibited inside autograd-enabled mode.",
+            "B": "Incorrect. It raises a `RuntimeError` immediately.",
+            "C": "Incorrect. Rather than silently turning a leaf parameter into a non-leaf tensor, PyTorch raises a `RuntimeError`.",
+            "D": "Incorrect. It raises an explicit `RuntimeError`."
+        },
+        "competency": "Use torch.no_grad() when performing manual in-place updates on leaf parameters",
+        "source": "modules/module_5_understanding_pytorch_nn/2_autograd/autograd.ipynb"
+    },
+    {
+        "id": "PTCA-F-152",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A6: Autograd, Computational Graphs & Gradients",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "What is the relationship between `x` and `y = x.detach()` when `x` is a tensor with `requires_grad=True`?",
+        "code": "import torch\n\nx = torch.tensor([1.0, 2.0, 3.0], requires_grad=True)\ny = x.detach()",
+        "options": {
+            "A": "`y` is a new tensor that shares the same underlying memory storage as `x`, but is detached from the computation graph with `y.requires_grad == False` and `y.is_leaf == True`.",
+            "B": "`y` is a deep copy of `x` in newly allocated memory with `y.requires_grad == False`.",
+            "C": "`y` is the exact same object as `x`, and `x.requires_grad` is mutated in-place to `False`.",
+            "D": "`y` moves `x` from the GPU to the CPU and converts it to a NumPy array."
+        },
+        "correct": ["A"],
+        "explanation": "`Tensor.detach()` returns a new Tensor detached from the current computational graph (`y.requires_grad == False`, `y.grad_fn == None`, `y.is_leaf == True`) that shares the exact same underlying data storage with `x` (while leaving `x.requires_grad == True`).",
+        "option_explanations": {
+            "A": "Correct. `.detach()` creates a zero-copy view detached from autograd history; if you also need independent memory storage, you use `x.detach().clone()`.",
+            "B": "Incorrect. `.detach()` does NOT copy memory; `y` and `x` share the same storage (`x.data_ptr() == y.data_ptr()`).",
+            "C": "Incorrect. `x.requires_grad` remains `True`; `.detach()` is not in-place (`detach_()` is the in-place version).",
+            "D": "Incorrect. `.detach()` keeps the tensor on its current device as a `torch.Tensor`."
+        },
+        "competency": "Understand memory sharing and autograd behavior of Tensor.detach()",
+        "source": "modules/module_5_understanding_pytorch_nn/2_autograd/autograd.ipynb"
+    },
+    {
+        "id": "PTCA-F-153",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A6: Autograd, Computational Graphs & Gradients",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "In the code below, `z` is computed using a detached branch `y2 = y1.detach()`. What value is printed for `x.grad` after `z.backward()`?",
+        "code": "import torch\n\nx = torch.tensor(3.0, requires_grad=True)\ny1 = x ** 2          # y1 = 9.0, dy1/dx = 2*x = 6.0\ny2 = y1.detach()     # detached from graph, value = 9.0\nz = y1 + x * y2      # z = x^2 + x * 9.0\nz.backward()\nprint(x.grad.item())",
+        "options": {
+            "A": "15.0",
+            "B": "33.0",
+            "C": "6.0",
+            "D": "9.0"
+        },
+        "correct": ["A"],
+        "explanation": "Because `y2 = y1.detach()` severs the gradient path through `y2`, `y2` is treated as a constant ($c = 9.0$) during backpropagation. Therefore, $z = x^2 + c \\cdot x$, and $\\frac{dz}{dx} = 2x + c = 2(3.0) + 9.0 = 15.0$. (If `y2` had not been detached, $z = x^2 + x^3$ would have given $2x + 3x^2 = 6 + 27 = 33.0$.)",
+        "option_explanations": {
+            "A": "Correct. With `y2` detached as a constant `9.0`, $dz/dx = d(x^2)/dx + 9.0 \\cdot d(x)/dx = 2(3.0) + 9.0 = 15.0$.",
+            "B": "Incorrect. `33.0` is the derivative if `y2` were NOT detached ($2x + 3x^2 = 6 + 27 = 33$).",
+            "C": "Incorrect. Although `y2` is detached, the term `x * y2` still depends directly on `x`, contributing `y2 = 9.0` to `x.grad`.",
+            "D": "Incorrect. The `y1 = x ** 2` branch is still connected and contributes `2 * x = 6.0`."
+        },
+        "competency": "Trace gradient flow when a subgraph is detached with .detach()",
+        "source": "modules/module_5_understanding_pytorch_nn/2_autograd/autograd.ipynb"
+    },
+    {
+        "id": "PTCA-F-154",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A6: Autograd, Computational Graphs & Gradients",
+        "difficulty": "Easy",
+        "multi_select": False,
+        "stem": "What is printed by the following code snippet from `modules/module_2_tensors/3_tensor_operations.ipynb`?",
+        "code": "import torch\n\nx = torch.randn(2, 2, requires_grad=True)\nprint(x.requires_grad)\nprint((x ** 2).requires_grad)\n\nwith torch.no_grad():\n    print((x ** 2).requires_grad)",
+        "options": {
+            "A": "`True`, `True`, `False`",
+            "B": "`True`, `True`, `True`",
+            "C": "`True`, `False`, `False`",
+            "D": "`False`, `False`, `False`"
+        },
+        "correct": ["A"],
+        "explanation": "As shown directly in `3_tensor_operations.ipynb`, `x` has `requires_grad=True`, so `(x ** 2)` outside the context manager tracks history and has `requires_grad=True`. Inside `with torch.no_grad():`, autograd stops tracking history on newly created tensors, so `(x ** 2).requires_grad` is `False`.",
+        "option_explanations": {
+            "A": "Correct. `x.requires_grad` is `True`, `(x ** 2)` outside `no_grad` is `True`, and `(x ** 2)` inside `with torch.no_grad():` is `False`.",
+            "B": "Incorrect. `with torch.no_grad():` disables gradient tracking on operations executed inside the block.",
+            "C": "Incorrect. Outside `no_grad`, any operation on a tensor with `requires_grad=True` produces an output with `requires_grad=True`.",
+            "D": "Incorrect. `x` was explicitly created with `requires_grad=True`."
+        },
+        "competency": "Predict effect of with torch.no_grad() on output tensor requires_grad",
+        "source": "modules/module_2_tensors/3_tensor_operations.ipynb"
+    },
+    {
+        "id": "PTCA-F-155",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A6: Autograd, Computational Graphs & Gradients",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "Why does calling `x.numpy()` directly on a CPU tensor `x = torch.tensor([1.0, 2.0], requires_grad=True)` fail, and what is the proper fix?",
+        "code": "import torch\n\nx = torch.tensor([1.0, 2.0], requires_grad=True)\narr = x.numpy()",
+        "options": {
+            "A": "It raises `RuntimeError: Can't call numpy() on Tensor that requires grad. Use tensor.detach().numpy() instead.` because NumPy operations are not tracked by PyTorch's autograd engine.",
+            "B": "It raises a `TypeError` because `float32` tensors must be cast to `float64` before calling `.numpy()`.",
+            "C": "It succeeds without error and returns a read-only NumPy array.",
+            "D": "You must call `x.cpu().numpy()` even when `x` is already on the CPU."
+        },
+        "correct": ["A"],
+        "explanation": "Because `.numpy()` returns a NumPy array sharing memory with the tensor and NumPy operations are invisible to PyTorch's autograd engine, PyTorch prevents silent graph corruption by raising `RuntimeError: Can't call numpy() on Tensor that requires grad. Use tensor.detach().numpy() instead.`",
+        "option_explanations": {
+            "A": "Correct. You must detach the tensor from the computation graph via `x.detach().numpy()` before converting to NumPy.",
+            "B": "Incorrect. `float32` tensors convert directly to `np.float32` arrays when `requires_grad=False`.",
+            "C": "Incorrect. It raises a `RuntimeError`.",
+            "D": "Incorrect. `.cpu()` preserves `requires_grad=True`, so `x.cpu().numpy()` would still raise the same `RuntimeError`."
+        },
+        "competency": "Use .detach().numpy() when converting autograd-tracked tensors to NumPy",
+        "source": "modules/module_5_understanding_pytorch_nn/2_autograd/autograd.ipynb"
+    },
+    {
+        "id": "PTCA-F-156",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A6: Autograd, Computational Graphs & Gradients",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "In a training loop, why is it strongly recommended to accumulate epoch logging metrics using `running_loss += loss.item()` (or `loss.detach()`) rather than `running_loss += loss`?",
+        "code": "running_loss = 0.0\nfor images, labels in trainloader:\n    optimizer.zero_grad()\n    outputs = model(images)\n    loss = criterion(outputs, labels)\n    loss.backward()\n    optimizer.step()\n    running_loss += loss.item()  # vs running_loss += loss",
+        "options": {
+            "A": "Because `loss` is a tensor attached to the computation graph (`grad_fn`); writing `running_loss += loss` accumulates the entire computation graph of every batch into memory across the epoch, causing severe memory growth (OOM).",
+            "B": "Because `loss.backward()` deletes the value of `loss`, making `running_loss += loss` evaluate to `NaN`.",
+            "C": "Because `+=` is not defined for 0D scalar `torch.Tensor` objects.",
+            "D": "Because `loss.item()` automatically divides the loss by the batch size."
+        },
+        "correct": ["A"],
+        "explanation": "`loss` has `requires_grad=True` and holds a reference (`grad_fn`) to the entire forward activation graph of that batch. If you accumulate `running_loss += loss` (a tracked Tensor), Python keeps references to every batch's computation graph alive in `running_loss`, preventing garbage collection and rapidly exhausting GPU/CPU memory. `loss.item()` extracts a plain Python `float`, allowing the graph to be freed immediately.",
+        "option_explanations": {
+            "A": "Correct. Extracting a Python float via `loss.item()` (or detaching via `loss.detach()`) prevents retaining the autograd graph across iterations.",
+            "B": "Incorrect. `loss.backward()` frees intermediate saved activations, not the scalar value of `loss` itself.",
+            "C": "Incorrect. `+=` works on tensors, which is why this bug is silent until memory runs out.",
+            "D": "Incorrect. `loss.item()` simply returns the scalar value of `loss` as a Python number."
+        },
+        "competency": "Prevent autograd graph memory leaks by using loss.item() for metric logging",
+        "source": "modules/module_6_pytorch_nn_hands_on/pytorch_nn_convolutional.ipynb"
+    },
+    {
+        "id": "PTCA-F-157",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A6: Autograd, Computational Graphs & Gradients",
+        "difficulty": "Easy",
+        "multi_select": False,
+        "stem": "What does it mean that PyTorch uses a *dynamic* computation graph (define-by-run) in its autograd engine?",
+        "code": "",
+        "options": {
+            "A": "The directed acyclic graph (DAG) of operations is constructed on the fly during each forward pass and freed after `.backward()`, allowing standard Python control flow (`if`, `for`, `while`) to change the graph structure on every iteration.",
+            "B": "You must compile and freeze the graph structure once using `torch.compile_graph()` before feeding any tensor data.",
+            "C": "The graph automatically adds or removes `nn.Linear` layers during `optimizer.step()` to minimize loss.",
+            "D": "Gradients are computed during the forward pass at the exact same time as the activations."
+        },
+        "correct": ["A"],
+        "explanation": "In PyTorch, the computation graph is a Directed Acyclic Graph (DAG) whose leaves are input/parameter tensors and roots are output tensors. Because the graph is built dynamically from scratch during every forward pass as Python operations execute (define-by-run), models can freely use dynamic Python control flow that varies per batch or sample.",
+        "option_explanations": {
+            "A": "Correct. Define-by-run constructs the autograd DAG dynamically during each forward execution and recreates it each iteration.",
+            "B": "Incorrect. That describes static (define-and-run) graph frameworks, not eager-mode PyTorch.",
+            "C": "Incorrect. Autograd does not alter model architecture during `optimizer.step()`.",
+            "D": "Incorrect. Forward mode records operations (`grad_fn`) and saves necessary intermediates; gradients are computed in reverse-mode during `.backward()`."
+        },
+        "competency": "Understand PyTorch dynamic computation graph (DAG) semantics",
+        "source": "modules/module_2_tensors/3_tensor_operations.ipynb"
+    },
+    {
+        "id": "PTCA-F-158",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A6: Autograd, Computational Graphs & Gradients",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "What happens when you attempt to create an integer tensor with `requires_grad=True`, as in `x = torch.tensor([1, 2, 3], dtype=torch.int64, requires_grad=True)`?",
+        "code": "import torch\n\nx = torch.tensor([1, 2, 3], dtype=torch.int64, requires_grad=True)",
+        "options": {
+            "A": "It raises `RuntimeError: Only Tensors of floating point and complex dtype can require gradients`.",
+            "B": "It automatically casts `x` to `torch.float32` and sets `requires_grad=True`.",
+            "C": "It succeeds and computes discrete integer finite differences during `.backward()`.",
+            "D": "It succeeds at creation time, and sets `x.grad` to `0` during `.backward()`."
+        },
+        "correct": ["A"],
+        "explanation": "Continuous derivatives are only defined for floating-point and complex tensors. Attempting to set `requires_grad=True` on an integer (`int64`, `int32`, `uint8`) or boolean (`bool`) tensor immediately raises `RuntimeError: Only Tensors of floating point and complex dtype can require gradients`.",
+        "option_explanations": {
+            "A": "Correct. Only floating-point (`float16`, `bfloat16`, `float32`, `float64`) and complex tensors can have `requires_grad=True`.",
+            "B": "Incorrect. PyTorch does not silently override an explicit integer dtype.",
+            "C": "Incorrect. Autograd does not compute finite differences on integer tensors.",
+            "D": "Incorrect. It raises a `RuntimeError` immediately when the tensor is created."
+        },
+        "competency": "Know dtype requirements for autograd requires_grad=True",
+        "source": "modules/module_2_tensors/3_tensor_operations.ipynb"
+    },
+    {
+        "id": "PTCA-F-159",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A6: Autograd, Computational Graphs & Gradients",
+        "difficulty": "Easy",
+        "multi_select": False,
+        "stem": "In a neural network with a pretrained backbone `model.backbone` and a new classification head `model.head`, how do you freeze `model.backbone` so that its weights are not updated and autograd does not compute gradients for them?",
+        "code": "for param in model.backbone.parameters():\n    ________________________",
+        "options": {
+            "A": "`param.requires_grad = False` (or `param.requires_grad_(False)`)",
+            "B": "`param.detach()`",
+            "C": "`param.grad = 0`",
+            "D": "`model.backbone.eval()`"
+        },
+        "correct": ["A"],
+        "explanation": "Setting `param.requires_grad = False` (or `param.requires_grad_(False)`) on the parameters of `model.backbone` excludes them from gradient computation during backpropagation and prevents optimizers from updating them.",
+        "option_explanations": {
+            "A": "Correct. Disabling `requires_grad` on a submodule's parameters freezes those weights.",
+            "B": "Incorrect. Calling `param.detach()` returns a new detached tensor that is discarded if not reassigned, leaving `param.requires_grad` as `True`.",
+            "C": "Incorrect. Setting `param.grad = 0` (which also fails if `0` is an `int` rather than a `Tensor` or `None`) does not stop future `.backward()` calls from computing gradients.",
+            "D": "Incorrect. `model.backbone.eval()` changes `Dropout` and `BatchNorm` behavior, but does NOT disable gradient computation."
+        },
+        "competency": "Freeze model parameters using requires_grad = False",
+        "source": "modules/module_5_understanding_pytorch_nn/2_autograd/autograd.ipynb"
+    },
+    {
+        "id": "PTCA-F-160",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A6: Autograd, Computational Graphs & Gradients",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "Suppose `a = torch.tensor([1.0, 2.0], requires_grad=False)` and `b = torch.tensor([3.0, 4.0], requires_grad=True)`. For `c = a * b`, what are `c.requires_grad` and `a.grad` after `c.sum().backward()`?",
+        "code": "import torch\n\na = torch.tensor([1.0, 2.0], requires_grad=False)\nb = torch.tensor([3.0, 4.0], requires_grad=True)\nc = a * b\nc.sum().backward()\nprint(c.requires_grad, a.grad, b.grad.tolist())",
+        "options": {
+            "A": "`c.requires_grad` is `True`, `a.grad` is `None`, and `b.grad.tolist()` is `[1.0, 2.0]`.",
+            "B": "`c.requires_grad` is `False` because `a.requires_grad` is `False`.",
+            "C": "`c.requires_grad` is `True`, `a.grad` is `[3.0, 4.0]`, and `b.grad` is `[1.0, 2.0]`.",
+            "D": "A `RuntimeError` is raised because `a` and `b` have different `requires_grad` settings."
+        },
+        "correct": ["A"],
+        "explanation": "In any differentiable operation involving multiple tensors, the output tensor `c` has `requires_grad=True` if *at least one* input tensor has `requires_grad=True`. During `backward()`, gradients are only computed for inputs that require gradients (`b.grad` receives `a = [1.0, 2.0]`), while `a.grad` remains `None`.",
+        "option_explanations": {
+            "A": "Correct. `requires_grad=True` is contagious across operations (logical OR), and only `b` accumulates `.grad`.",
+            "B": "Incorrect. Only one operand needs `requires_grad=True` for the output `c` to have `requires_grad=True`.",
+            "C": "Incorrect. `a` has `requires_grad=False`, so autograd does not compute `a.grad` (`None`).",
+            "D": "Incorrect. Mixing tracked parameters (`requires_grad=True`) with untracked data inputs (`requires_grad=False`) is how every neural network forward pass works."
+        },
+        "competency": "Understand propagation of requires_grad across mixed operands",
+        "source": "modules/module_5_understanding_pytorch_nn/2_autograd/autograd.ipynb"
+    },
+    {
+        "id": "PTCA-F-161",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A6: Autograd, Computational Graphs & Gradients",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "In `optimizer.zero_grad(set_to_none=True)` (the default in modern PyTorch), how does setting `param.grad = None` compare to filling `param.grad` with zeros (`set_to_none=False`)?",
+        "code": "optimizer.zero_grad(set_to_none=True)",
+        "options": {
+            "A": "Setting `param.grad = None` avoids executing a `memset`/zero-fill kernel during `zero_grad()` and lets `.backward()` directly assign the gradient tensor instead of performing an `+=` accumulation on the first backward pass.",
+            "B": "Setting `param.grad = None` permanently disables gradient tracking on `param` until `requires_grad_(True)` is called again.",
+            "C": "Setting `param.grad = None` causes `loss.backward()` to raise a `TypeError: unsupported operand type(s) for +=: 'NoneType' and 'Tensor'`.",
+            "D": "`set_to_none=True` only works on CPU tensors and raises an error on CUDA."
+        },
+        "correct": ["A"],
+        "explanation": "When `param.grad` is set to `None` (the default `set_to_none=True` behavior in `optimizer.zero_grad()` and `module.zero_grad()`), PyTorch reduces memory bandwidth and improves performance by skipping the explicit zero-fill operation in `zero_grad()` and initializing the gradient directly during `.backward()` rather than reading and adding to a zero tensor.",
+        "option_explanations": {
+            "A": "Correct. `set_to_none=True` saves memory and eliminates redundant zero-fill and addition ops.",
+            "B": "Incorrect. `param.grad = None` only clears the stored gradient buffer; `param.requires_grad` remains `True`.",
+            "C": "Incorrect. When `param.grad` is `None`, `.backward()` initializes `param.grad` with the newly computed gradient.",
+            "D": "Incorrect. `set_to_none=True` works across all devices and is especially beneficial on GPUs."
+        },
+        "competency": "Understand behavior and performance benefits of optimizer.zero_grad(set_to_none=True)",
+        "source": "modules/module_6_pytorch_nn_hands_on/pytorch_nn_convolutional.ipynb"
+    },
+    {
+        "id": "PTCA-F-162",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A6: Autograd, Computational Graphs & Gradients",
+        "difficulty": "Hard",
+        "multi_select": False,
+        "stem": "If you are inside a `with torch.no_grad():` block (for example, inside an evaluation helper function), how can you temporarily re-enable autograd gradient tracking for a specific inner sub-block (such as computing adversarial perturbations or Grad-CAM)?",
+        "code": "with torch.no_grad():\n    features = backbone(x)\n    # Need to enable autograd tracking only inside this inner block:\n    with ________________________:\n        x_adv = x.detach().requires_grad_(True)\n        loss = head(backbone(x_adv)).sum()\n        loss.backward()",
+        "options": {
+            "A": "`torch.enable_grad()` (or `torch.set_grad_enabled(True)`)",
+            "B": "`torch.with_grad()`",
+            "C": "`torch.autograd.resume()`",
+            "D": "It is impossible to re-enable gradients inside a `torch.no_grad()` block."
+        },
+        "correct": ["A"],
+        "explanation": "`torch.enable_grad()` and `torch.set_grad_enabled(True)` are context managers/decorators that locally enable gradient calculation even when nested inside an outer `with torch.no_grad():` context (note: this works inside `torch.no_grad()`, whereas tensors created inside `torch.inference_mode()` cannot be used in autograd).",
+        "option_explanations": {
+            "A": "Correct. `with torch.enable_grad():` or `with torch.set_grad_enabled(True):` re-enables autograd inside a `no_grad` block.",
+            "B": "Incorrect. `torch.with_grad()` does not exist in PyTorch.",
+            "C": "Incorrect. `torch.autograd.resume()` does not exist.",
+            "D": "Incorrect. `torch.enable_grad()` is specifically designed to nest inside `torch.no_grad()`."
+        },
+        "competency": "Control gradient tracking locally with torch.enable_grad() and torch.set_grad_enabled()",
+        "source": "modules/module_5_understanding_pytorch_nn/2_autograd/autograd.ipynb"
+    },
+    {
+        "id": "PTCA-F-163",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A6: Autograd, Computational Graphs & Gradients",
+        "difficulty": "Hard",
+        "multi_select": False,
+        "stem": "Instead of calling `y.backward()`, which function in `torch.autograd` computes and returns the gradients of `outputs` with respect to `inputs` directly as a tuple of tensors WITHOUT accumulating them into the `.grad` attributes of the leaf tensors?",
+        "code": "import torch\n\nx = torch.tensor([2.0, 3.0], requires_grad=True)\ny = (x ** 3).sum()\n# Want dy/dx returned directly while leaving x.grad as None",
+        "options": {
+            "A": "`grads = torch.autograd.grad(outputs=y, inputs=x)`",
+            "B": "`grads = torch.autograd.backward(y, inputs=x, return_grads=True)`",
+            "C": "`grads = y.grad_fn(x)`",
+            "D": "`grads = torch.gradient(y, x)`"
+        },
+        "correct": ["A"],
+        "explanation": "`torch.autograd.grad(outputs, inputs, ...)` computes and returns the sum of gradients of `outputs` with respect to the given `inputs` as a tuple of tensors, without populating or modifying `.grad` on the leaf tensors.",
+        "option_explanations": {
+            "A": "Correct. `torch.autograd.grad(outputs=y, inputs=x)` returns `(tensor([12., 27.]),)` and leaves `x.grad` untouched (`None`).",
+            "B": "Incorrect. `torch.autograd.backward` accumulates gradients into `.grad` and returns `None`.",
+            "C": "Incorrect. Calling `grad_fn` directly is not a public API for computing end-to-end gradients with respect to leaf inputs.",
+            "D": "Incorrect. `torch.gradient()` estimates numerical finite differences along tensor dimensions, not symbolic autograd derivatives."
+        },
+        "competency": "Compute gradients directly without populating .grad using torch.autograd.grad",
+        "source": "modules/module_5_understanding_pytorch_nn/2_autograd/autograd.ipynb"
+    },
+    {
+        "id": "PTCA-F-164",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A6: Autograd, Computational Graphs & Gradients",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "In the second example of `modules/module_5_understanding_pytorch_nn/2_autograd/autograd.ipynb`, the following single-layer forward and backward pass is executed. What are the shapes of `w.grad` and `b.grad` after `loss.backward()`?",
+        "code": "import torch\n\nx = torch.ones(9)\ny = torch.zeros(3)\nw = torch.randn(9, 3, requires_grad=True)\nb = torch.randn(3, requires_grad=True)\nz = torch.matmul(x, w) + b\nloss = torch.nn.MSELoss()(z, y)\nloss.backward()\nprint(w.grad.shape, b.grad.shape)",
+        "options": {
+            "A": "`w.grad.shape` is `torch.Size([9, 3])` and `b.grad.shape` is `torch.Size([3])`.",
+            "B": "`w.grad.shape` is `torch.Size([3, 9])` and `b.grad.shape` is `torch.Size([1, 3])`.",
+            "C": "Both `w.grad.shape` and `b.grad.shape` are `torch.Size([])` because `loss` is a scalar.",
+            "D": "`w.grad.shape` is `torch.Size([9])` and `b.grad.shape` is `torch.Size([3])`."
+        },
+        "correct": ["A"],
+        "explanation": "For any scalar loss, the gradient tensor `param.grad` of a leaf parameter `param` always has the exact same shape (`param.shape`), `dtype`, and `device` as `param` itself. Since `w` has shape `(9, 3)` and `b` has shape `(3,)`, `w.grad.shape` is `torch.Size([9, 3])` and `b.grad.shape` is `torch.Size([3])`.",
+        "option_explanations": {
+            "A": "Correct. `.grad` always matches the exact shape of the leaf tensor (`(9, 3)` for `w` and `(3,)` for `b`).",
+            "B": "Incorrect. The gradient is never transposed relative to the parameter tensor.",
+            "C": "Incorrect. Each element of `param.grad` holds $\\partial \\text{loss} / \\partial \\text{param}_i$, matching `param.shape`.",
+            "D": "Incorrect. `w` is a 2D tensor of shape `(9, 3)`, so `w.grad` is also `(9, 3)`."
+        },
+        "competency": "Verify that parameter .grad shapes match parameter tensor shapes",
+        "source": "modules/module_5_understanding_pytorch_nn/2_autograd/autograd.ipynb"
+    },
+    {
+        "id": "PTCA-F-165",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A6: Autograd, Computational Graphs & Gradients",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "What happens to gradient flow when a non-differentiable operation like `idx = torch.argmax(logits, dim=-1)` is applied to a tensor `logits` with `requires_grad=True`?",
+        "code": "import torch\n\nlogits = torch.randn(4, 10, requires_grad=True)\nidx = torch.argmax(logits, dim=-1)\nprint(idx.requires_grad, idx.grad_fn)",
+        "options": {
+            "A": "Because `argmax` returns discrete integer indices (`dtype=torch.int64`) and is non-differentiable, `idx.requires_grad` is `False` and `idx.grad_fn` is `None`, breaking gradient flow through `idx`.",
+            "B": "`idx` has `requires_grad=True` and `grad_fn=<ArgmaxBackward0>`, passing gradients only to the maximum element (like `torch.max`).",
+            "C": "`torch.argmax(logits)` raises a `RuntimeError` if `logits.requires_grad` is `True`.",
+            "D": "`idx` uses a straight-through estimator by default to pass uniform gradients to all 10 classes."
+        },
+        "correct": ["A"],
+        "explanation": "Index-returning operations like `torch.argmax` and `torch.argmin` return `torch.int64` tensors and have zero derivative almost everywhere. In PyTorch, `idx` has `requires_grad=False` and `grad_fn=None`, so no gradients can backpropagate through `argmax` (unlike `torch.max(logits, dim=-1).values`, which returns the floating-point maximum values and DOES propagate gradients to the max entry).",
+        "option_explanations": {
+            "A": "Correct. `argmax` returns integer indices (`requires_grad=False`, `grad_fn=None`) and cannot propagate gradients.",
+            "B": "Incorrect. That describes `torch.max(logits, dim=-1).values` (which returns float values), not `torch.argmax` (which returns integer indices).",
+            "C": "Incorrect. Calling `argmax` on a tracked tensor is valid; it simply produces an untracked integer tensor.",
+            "D": "Incorrect. PyTorch does not apply a straight-through estimator to `argmax`."
+        },
+        "competency": "Understand how non-differentiable index operations affect the autograd graph",
+        "source": "modules/module_5_understanding_pytorch_nn/2_autograd/autograd.ipynb"
+    },
+    {
+        "id": "PTCA-F-166",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A6: Autograd, Computational Graphs & Gradients",
+        "difficulty": "Hard",
+        "multi_select": False,
+        "stem": "Suppose you want to perform gradient accumulation over `K = 4` micro-batches before calling `optimizer.step()` and `optimizer.zero_grad()`, so that the effective update equals that of a single batch 4 times larger (with `criterion = nn.CrossEntropyLoss(reduction='mean')`). How should the loss be scaled before calling `.backward()` on each micro-batch?",
+        "code": "optimizer.zero_grad()\nfor step, (x, y) in enumerate(trainloader):\n    loss = criterion(model(x), y)\n    # Accumulate gradients over K = 4 micro-batches:\n    ________________________\n    if (step + 1) % 4 == 0:\n        optimizer.step()\n        optimizer.zero_grad()",
+        "options": {
+            "A": "`(loss / 4).backward()`",
+            "B": "`(loss * 4).backward()`",
+            "C": "`loss.backward(retain_graph=True)`",
+            "D": "No scaling is needed; `optimizer.step()` automatically divides accumulated `.grad` tensors by the number of `.backward()` calls."
+        },
+        "correct": ["A"],
+        "explanation": "Because `criterion` uses `reduction='mean'`, each micro-batch's loss is the mean over that micro-batch, and calling `loss.backward()` 4 times sums the 4 micro-batch mean gradients ($\\sum_{k=1}^4 g_k$). Dividing the loss by `K = 4` (`(loss / 4).backward()`) averages the gradients across the 4 micro-batches ($\\frac{1}{4} \\sum_{k=1}^4 g_k$), matching the gradient of a full batch of size $4 \\times B$.",
+        "option_explanations": {
+            "A": "Correct. Dividing `loss` by the accumulation steps `K=4` before `.backward()` averages the accumulated gradients across the 4 micro-batches.",
+            "B": "Incorrect. Multiplying by 4 would make the accumulated gradient 16 times larger than a single mean gradient.",
+            "C": "Incorrect. Each micro-batch builds an independent computation graph; `retain_graph=True` is unnecessary and would leak memory across micro-batches.",
+            "D": "Incorrect. `Optimizer` has no counter of how many times `.backward()` was called since the last `zero_grad()`."
+        },
+        "competency": "Implement micro-batch gradient accumulation using autograd accumulation",
+        "source": "modules/module_5_understanding_pytorch_nn/2_autograd/autograd.ipynb"
+    },
+
+    # =========================================================================
+    # A7: Model Lifecycle (train, eval, no_grad, inference_mode, save/load) (PTCA-F-167 to PTCA-F-190, 24 Qs)
+    # =========================================================================
+    {
+        "id": "PTCA-F-167",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A7: Model Lifecycle (train, eval, no_grad, inference_mode, save/load)",
+        "difficulty": "Easy",
+        "multi_select": False,
+        "stem": "What is the exact effect of calling `model.eval()` on a `torch.nn.Module`?",
+        "code": "model.eval()",
+        "options": {
+            "A": "It sets `self.training = False` recursively on the module and all its submodules (which changes the forward behavior of layers like `nn.Dropout` and `nn.BatchNorm2d`), but it does NOT disable autograd gradient tracking.",
+            "B": "It sets `self.training = False` AND automatically disables gradient calculation (equivalent to `torch.no_grad()`).",
+            "C": "It sets `requires_grad = False` on all `nn.Parameter` tensors inside the model.",
+            "D": "It freezes the model weights and converts the model into a static TorchScript graph."
+        },
+        "correct": ["A"],
+        "explanation": "`model.eval()` is literally equivalent to `model.train(False)`. It recursively sets the boolean attribute `module.training = False` on every submodule in the model so layers with mode-dependent behavior (`Dropout`, `BatchNorm`, etc.) switch to evaluation mode. It has zero effect on the autograd engine or `requires_grad` flags.",
+        "option_explanations": {
+            "A": "Correct. `model.eval()` only switches layer behavior (`training = False`); autograd remains active unless `torch.no_grad()` or `torch.inference_mode()` is also used.",
+            "B": "Incorrect. `model.eval()` does NOT disable gradient calculation.",
+            "C": "Incorrect. All model parameters retain their `requires_grad=True` flags when `model.eval()` is called.",
+            "D": "Incorrect. `model.eval()` does not compile the model to TorchScript."
+        },
+        "competency": "Understand exact behavior of model.eval() vs autograd gradient tracking",
+        "source": "modules/module_6_pytorch_nn_hands_on/pytorch_nn_linear.ipynb"
+    },
+    {
+        "id": "PTCA-F-168",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A7: Model Lifecycle (train, eval, no_grad, inference_mode, save/load)",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "Look at Step 8 of `modules/module_6_pytorch_nn_hands_on/pytorch_nn_convolutional.ipynb` (and Step 7 of `pytorch_nn_linear.ipynb`) shown below. What inefficiency is present in this inference snippet, and how should it be improved?",
+        "code": "model.eval()  # Set the model to evaluation mode\noutputs = model(images)\n_, predicted = torch.max(outputs, 1)",
+        "options": {
+            "A": "Because `model.eval()` alone does not disable autograd, `outputs = model(images)` still builds the full computation graph and saves intermediate activations in memory; wrapping the forward pass in `with torch.no_grad():` (or `with torch.inference_mode():`) eliminates this overhead.",
+            "B": "`model.eval()` disables `nn.ReLU` activations, causing incorrect class predictions.",
+            "C": "`torch.max(outputs, 1)` raises a `RuntimeError` if `outputs.requires_grad` is `True`.",
+            "D": "`model.eval()` must be called *after* `outputs = model(images)` to take effect."
+        },
+        "correct": ["A"],
+        "explanation": "In `pytorch_nn_convolutional.ipynb` Step 8 and `pytorch_nn_linear.ipynb` Step 7, `model.eval()` is called without a `with torch.no_grad():` or `with torch.inference_mode():` context manager. Because `model`'s parameters have `requires_grad=True`, PyTorch builds the full autograd graph and stores intermediate activations unnecessarily during inference.",
+        "option_explanations": {
+            "A": "Correct. Pairing `model.eval()` with `with torch.no_grad():` or `with torch.inference_mode():` both switches layer modes and disables autograd memory/compute overhead.",
+            "B": "Incorrect. `nn.ReLU` behaves identically in training and evaluation modes.",
+            "C": "Incorrect. `torch.max()` works regardless of `requires_grad`.",
+            "D": "Incorrect. `model.eval()` must be called *before* the forward pass."
+        },
+        "competency": "Identify missing torch.no_grad() / torch.inference_mode() during model.eval() inference",
+        "source": "modules/module_6_pytorch_nn_hands_on/pytorch_nn_convolutional.ipynb"
+    },
+    {
+        "id": "PTCA-F-169",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A7: Model Lifecycle (train, eval, no_grad, inference_mode, save/load)",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "Conversely, suppose a developer evaluates `CNNModel` (which contains `nn.Dropout(0.5)`) on the validation set using ONLY `with torch.no_grad():` while forgetting to call `model.eval()` after training. What happens during validation?",
+        "code": "# After training epoch where model.train() was active:\nwith torch.no_grad():\n    for images, labels in val_loader:\n        outputs = model(images)",
+        "options": {
+            "A": "Autograd is disabled, but because `model.training` is still `True`, `nn.Dropout(0.5)` continues randomly zeroing 50% of activations (and scaling the rest by 2), producing noisy, non-deterministic validation predictions.",
+            "B": "`with torch.no_grad():` automatically sets `model.training = False` inside the block, so `Dropout` is disabled.",
+            "C": "`nn.Dropout` raises a `RuntimeError` when executed inside a `torch.no_grad()` block.",
+            "D": "The validation metrics are identical to calling `model.eval()`, only slightly slower."
+        },
+        "correct": ["A"],
+        "explanation": "`torch.no_grad()` only disables the autograd engine; it does NOT change `model.training`. If `model.eval()` is omitted, `nn.Dropout(0.5)` remains in training mode and randomly drops 50% of activations during validation (and any `BatchNorm` layers continue updating their running statistics with validation batch stats!).",
+        "option_explanations": {
+            "A": "Correct. `torch.no_grad()` has no effect on `model.training`, so `Dropout` (and `BatchNorm` batch updates) remain active.",
+            "B": "Incorrect. `torch.no_grad()` and `model.eval()` are completely orthogonal mechanisms.",
+            "C": "Incorrect. `nn.Dropout` runs without error inside `torch.no_grad()`.",
+            "D": "Incorrect. Active dropout causes stochastic, degraded validation accuracy."
+        },
+        "competency": "Explain why torch.no_grad() alone does not disable Dropout or BatchNorm training behavior",
+        "source": "modules/module_6_pytorch_nn_hands_on/pytorch_nn_convolutional.ipynb"
+    },
+    {
+        "id": "PTCA-F-170",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A7: Model Lifecycle (train, eval, no_grad, inference_mode, save/load)",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "How do `nn.Dropout(p=0.5)` and `nn.BatchNorm2d` change their behavior when switching from `model.train()` to `model.eval()`?",
+        "code": "",
+        "options": {
+            "A": "In `model.eval()`, `Dropout` becomes an identity pass-through (dropping 0% of elements without scaling), and `BatchNorm2d` normalizes inputs using its learned running mean and running variance instead of the current mini-batch statistics.",
+            "B": "In `model.eval()`, `Dropout` multiplies all activations by `0.5` and `BatchNorm2d` continues updating its running mean and variance from the test batches.",
+            "C": "In `model.eval()`, both `Dropout` and `BatchNorm2d` are completely bypassed as identity functions.",
+            "D": "In `model.train()`, `BatchNorm2d` uses fixed running statistics, whereas in `model.eval()` it computes per-batch mean and variance."
+        },
+        "correct": ["A"],
+        "explanation": "PyTorch uses *inverted dropout*: during `model.train()`, `nn.Dropout(p)` randomly zeroes elements with probability $p$ and scales remaining elements by $\\frac{1}{1-p}$, so that during `model.eval()`, `Dropout` is a pure identity function. For `nn.BatchNorm2d`, `model.train()` normalizes using current batch statistics and updates `running_mean`/`running_var`, whereas `model.eval()` freezes and uses the accumulated `running_mean` and `running_var`.",
+        "option_explanations": {
+            "A": "Correct. Inverted dropout makes `eval()` an identity operation, and `BatchNorm2d` switches from mini-batch statistics to frozen running statistics.",
+            "B": "Incorrect. Because PyTorch scales by $1/(1-p)$ during *training*, no `0.5` multiplication is needed in `eval()`, and `BatchNorm2d` freezes running stats in `eval()`.",
+            "C": "Incorrect. `BatchNorm2d` is NOT bypassed in `eval()`; it still normalizes using `running_mean`/`running_var` and applies learned affine parameters $\\gamma, \\beta$.",
+            "D": "Incorrect. This reverses training and evaluation behavior for `BatchNorm2d`."
+        },
+        "competency": "Contrast Dropout and BatchNorm behavior between model.train() and model.eval()",
+        "source": "modules/module_6_pytorch_nn_hands_on/pytorch_nn_convolutional.ipynb"
+    },
+    {
+        "id": "PTCA-F-171",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A7: Model Lifecycle (train, eval, no_grad, inference_mode, save/load)",
+        "difficulty": "Hard",
+        "multi_select": False,
+        "stem": "How does `with torch.inference_mode():` go beyond `with torch.no_grad():` to achieve even lower runtime overhead during pure inference, and what restriction does this introduce?",
+        "code": "with torch.inference_mode():\n    out = model(x)",
+        "options": {
+            "A": "In addition to disabling autograd graph construction, `inference_mode` disables view tracking and version counter bumps on tensors created inside the block; consequently, inference tensors cannot be modified in-place outside the block or later used in computations that require gradients.",
+            "B": "`inference_mode` automatically calls `model.eval()` and quantizes all `float32` weights to `int8`.",
+            "C": "`inference_mode` only works on CUDA GPUs and raises an error on CPU or MPS.",
+            "D": "`inference_mode` allows calling `out.backward()` once without saving intermediate activations."
+        },
+        "correct": ["A"],
+        "explanation": "`torch.inference_mode()` is the extreme version of `torch.no_grad()`. Whereas `no_grad()` skips recording `grad_fn` nodes but still maintains tensor version counters and view metadata (in case a tensor is later used with `enable_grad()`), `inference_mode()` disables autograd view tracking and version counter tracking altogether. As a result, tensors created inside `inference_mode()` ('inference tensors') cannot be used in later autograd-tracked operations without cloning them first.",
+        "option_explanations": {
+            "A": "Correct. `inference_mode()` disables view metadata and version counter tracking in addition to graph recording, making it faster than `no_grad()` for pure inference.",
+            "B": "Incorrect. Like `no_grad()`, `inference_mode()` does NOT call `model.eval()` and does not quantize weights.",
+            "C": "Incorrect. `inference_mode()` is supported across all devices (`cpu`, `cuda`, `mps`, `xpu`).",
+            "D": "Incorrect. Gradients cannot be computed through `inference_mode()`."
+        },
+        "competency": "Distinguish torch.inference_mode() from torch.no_grad() internals and restrictions",
+        "source": "modules/module_6_pytorch_nn_hands_on/pytorch_nn_linear.ipynb"
+    },
+    {
+        "id": "PTCA-F-172",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A7: Model Lifecycle (train, eval, no_grad, inference_mode, save/load)",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "In a training script that runs a validation pass at the end of every training epoch, what bug occurs in Epoch 2 if the validation function calls `model.eval()` at its start, but the training loop only called `model.train()` once before the outer `for epoch in range(epochs):` loop?",
+        "code": "model.train()\nfor epoch in range(epochs):\n    for x, y in trainloader:\n        # training step ...\n        pass\n    validate(model, valloader)  # calls model.eval() internally!",
+        "options": {
+            "A": "Starting in Epoch 2, the training loop runs with the model stuck in evaluation mode (`model.training == False`), so `Dropout` is disabled and `BatchNorm` stops updating running statistics during training. You should call `model.train()` at the beginning of each epoch (or at the end of `validate`).",
+            "B": "Starting in Epoch 2, `loss.backward()` raises a `RuntimeError` because `model.eval()` disables gradient computation.",
+            "C": "`model.eval()` automatically reverts to `model.train()` when the `validate()` function scope exits.",
+            "D": "`optimizer.step()` automatically resets `model.training = True` on the first batch of Epoch 2."
+        },
+        "correct": ["A"],
+        "explanation": "`model.eval()` mutates `model.training = False` in-place on the `model` object; it is NOT scoped to the `validate()` function call. If `model.train()` is not called again before the next training epoch starts, all subsequent training epochs run in evaluation mode!",
+        "option_explanations": {
+            "A": "Correct. Because `model.eval()` mutates the model state persistently, `model.train()` must be called at the start of every training epoch.",
+            "B": "Incorrect. `model.eval()` does not disable autograd, so `loss.backward()` runs without raising an error—making this a silent training bug.",
+            "C": "Incorrect. `model.eval()` is an in-place method call, not a function-scoped context manager.",
+            "D": "Incorrect. `optimizer.step()` only updates parameter tensors and never modifies `model.training`."
+        },
+        "competency": "Properly switch between model.train() and model.eval() across training/validation epochs",
+        "source": "modules/module_6_pytorch_nn_hands_on/pytorch_nn_convolutional.ipynb"
+    },
+    {
+        "id": "PTCA-F-173",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A7: Model Lifecycle (train, eval, no_grad, inference_mode, save/load)",
+        "difficulty": "Easy",
+        "multi_select": False,
+        "stem": "In `modules/module_6_pytorch_nn_hands_on/pytorch_nn_convolutional.ipynb` (Steps 7 and 8), what is the recommended PyTorch pattern for saving and loading a trained model's learned parameters?",
+        "code": "# Save:\ntorch.save(________________________, 'ml_with_pytorch_model_cnn.pth')\n\n# Load into a new instance:\nmodel = CNNModel()\nmodel.load_state_dict(________________________)",
+        "options": {
+            "A": "`model.state_dict()` and `torch.load('ml_with_pytorch_model_cnn.pth', weights_only=True)`",
+            "B": "`model.parameters()` and `torch.load('ml_with_pytorch_model_cnn.pth')`",
+            "C": "`model` and `torch.load_model('ml_with_pytorch_model_cnn.pth')`",
+            "D": "`model.weights()` and `torch.restore('ml_with_pytorch_model_cnn.pth')`"
+        },
+        "correct": ["A"],
+        "explanation": "The recommended PyTorch pattern is to save the model's `state_dict()` dictionary (`torch.save(model.state_dict(), path)`) and later instantiate the model class and load the dictionary via `model.load_state_dict(torch.load(path, weights_only=True))`.",
+        "option_explanations": {
+            "A": "Correct. Saving `model.state_dict()` and loading it with `model.load_state_dict(torch.load(...))` is the standard PyTorch workflow.",
+            "B": "Incorrect. `model.parameters()` returns a generator, which cannot be passed to `load_state_dict()`.",
+            "C": "Incorrect. Passing the full `model` object to `torch.save(model, ...)` saves a pickled module rather than a `state_dict`, and `torch.load_model` does not exist.",
+            "D": "Incorrect. Neither `model.weights()` nor `torch.restore()` exists in PyTorch."
+        },
+        "competency": "Save and load model weights using state_dict() and load_state_dict()",
+        "source": "modules/module_6_pytorch_nn_hands_on/pytorch_nn_convolutional.ipynb"
+    },
+    {
+        "id": "PTCA-F-174",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A7: Model Lifecycle (train, eval, no_grad, inference_mode, save/load)",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "What is a common mistake when someone writes `model = torch.load('model_state_dict.pth')` on a file that was saved using `torch.save(model.state_dict(), 'model_state_dict.pth')`?",
+        "code": "# Saved earlier via: torch.save(model.state_dict(), 'model_state_dict.pth')\nmodel = torch.load('model_state_dict.pth', weights_only=True)\nmodel.eval()",
+        "options": {
+            "A": "`torch.load()` returns an `OrderedDict` (the `state_dict`), not an `nn.Module` instance, so calling `model.eval()` raises `AttributeError: ' collections.OrderedDict' object has no attribute 'eval'`. You must instantiate the model class first and call `model.load_state_dict(...)`.",
+            "B": "`torch.load()` automatically reconstructs the `nn.Module` from the `state_dict` keys, so `model.eval()` works as expected.",
+            "C": "`torch.load()` returns a list of NumPy arrays rather than PyTorch tensors.",
+            "D": "`model.load_state_dict('model_state_dict.pth')` should be called directly with the filename string instead of calling `torch.load()`."
+        },
+        "correct": ["A"],
+        "explanation": "When `torch.save(model.state_dict(), path)` is used, the file stores an `OrderedDict` mapping parameter/buffer names to tensors—it does NOT store the Python class definition or `nn.Module` object. Therefore, `torch.load(path)` returns that `OrderedDict`, which must be passed to an instantiated model via `model.load_state_dict(torch.load(path, weights_only=True))`.",
+        "option_explanations": {
+            "A": "Correct. `torch.load()` on a saved `state_dict` returns an `OrderedDict`, which must be loaded into an instantiated `nn.Module` via `model.load_state_dict(...)`.",
+            "B": "Incorrect. A `state_dict` contains only parameter and buffer tensors, not the `forward()` method or model class structure.",
+            "C": "Incorrect. `state_dict` values are `torch.Tensor` objects.",
+            "D": "Incorrect. `model.load_state_dict()` expects a dictionary-like `state_dict` object, not a file path string (`TypeError`)."
+        },
+        "competency": "Distinguish torch.load() return value (OrderedDict) from model.load_state_dict()",
+        "source": "modules/module_6_pytorch_nn_hands_on/pytorch_nn_linear.ipynb"
+    },
+    {
+        "id": "PTCA-F-175",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A7: Model Lifecycle (train, eval, no_grad, inference_mode, save/load)",
+        "difficulty": "Easy",
+        "multi_select": False,
+        "stem": "What types of entries are included in the dictionary returned by `model.state_dict()`?",
+        "code": "import torch.nn as nn\n\nmodel = nn.Sequential(\n    nn.Conv2d(3, 16, kernel_size=3),\n    nn.ReLU(),\n    nn.BatchNorm2d(16),\n    nn.Dropout(0.5)\n)\nprint(list(model.state_dict().keys()))",
+        "options": {
+            "A": "Learnable parameters (`nn.Parameter`, such as `weight` and `bias`) AND registered buffers (such as `BatchNorm2d`'s `running_mean`, `running_var`, and `num_batches_tracked`); stateless layers like `nn.ReLU` and `nn.Dropout` have no entries.",
+            "B": "Only learnable parameters with `requires_grad=True`; `BatchNorm2d` running statistics are excluded.",
+            "C": "Every submodule in `nn.Sequential`, including `1.relu` and `3.dropout`.",
+            "D": "Both the model's parameters and the attached optimizer's learning rate and momentum buffers."
+        },
+        "correct": ["A"],
+        "explanation": "A module's `state_dict` maps each layer's name to its learnable `nn.Parameter` tensors (`0.weight`, `0.bias`, `2.weight`, `2.bias`) as well as persistent registered buffers (`2.running_mean`, `2.running_var`, `2.num_batches_tracked`). Layers without parameters or buffers (`ReLU`, `Dropout`, `MaxPool2d`) have no entries in `state_dict()`.",
+        "option_explanations": {
+            "A": "Correct. `state_dict()` includes both learnable parameters and persistent registered buffers, while stateless layers have no keys.",
+            "B": "Incorrect. Registered buffers (like `BatchNorm` running stats) and frozen parameters (`requires_grad=False`) ARE included in `state_dict()`.",
+            "C": "Incorrect. Stateless modules (`ReLU`, `Dropout`) have no parameters or buffers and do not appear as keys in `state_dict()`.",
+            "D": "Incorrect. Optimizer state lives in a separate `optimizer.state_dict()`."
+        },
+        "competency": "Identify contents of nn.Module.state_dict() (parameters and buffers)",
+        "source": "modules/module_6_pytorch_nn_hands_on/pytorch_nn_convolutional.ipynb"
+    },
+    {
+        "id": "PTCA-F-176",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A7: Model Lifecycle (train, eval, no_grad, inference_mode, save/load)",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "Why does PyTorch recommend saving `torch.save(model.state_dict(), path)` rather than saving the entire model object via `torch.save(model, path)`? And why is `weights_only=True` recommended in `torch.load()`?",
+        "code": "",
+        "options": {
+            "A": "`torch.save(model, path)` uses Python `pickle` to serialize the class path and directory structure, which breaks if the code is refactored and allows arbitrary code execution on `torch.load` from untrusted files; `state_dict` + `weights_only=True` safely loads only tensor weights and primitives.",
+            "B": "`torch.save(model, path)` only saves the model architecture and discards all learned parameter values.",
+            "C": "`torch.save(model.state_dict(), path)` compresses weights to 8-bit integers, whereas `torch.save(model, path)` saves 64-bit floats.",
+            "D": "`torch.save(model, path)` cannot save models that contain `nn.Conv2d` or `nn.BatchNorm2d` layers."
+        },
+        "correct": ["A"],
+        "explanation": "Saving an entire `nn.Module` via `torch.save(model, path)` binds the serialized data to the exact Python module/file path and class structure used when saving, and unpickling arbitrary classes on `torch.load()` is a security risk if the checkpoint comes from an untrusted source. Saving `model.state_dict()` and loading with `torch.load(path, weights_only=True)` restricts unpickling to safe tensor and primitive types.",
+        "option_explanations": {
+            "A": "Correct. `state_dict` decoupling avoids fragile pickle path dependencies, and `weights_only=True` prevents arbitrary code execution during `torch.load`.",
+            "B": "Incorrect. `torch.save(model, path)` does save the weights along with the pickled class reference.",
+            "C": "Incorrect. Both preserve the exact tensor dtypes.",
+            "D": "Incorrect. `torch.save(model, path)` supports standard `nn` layers, though it remains brittle across code refactors."
+        },
+        "competency": "Understand security and portability reasons for state_dict() and weights_only=True",
+        "source": "modules/module_6_pytorch_nn_hands_on/pytorch_nn_convolutional.ipynb"
+    },
+    {
+        "id": "PTCA-F-177",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A7: Model Lifecycle (train, eval, no_grad, inference_mode, save/load)",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "A model's `state_dict` was saved while the model was on a CUDA GPU (`cuda:0`). You now want to load this checkpoint on a CPU-only machine (where `torch.cuda.is_available()` is `False`). What happens if you call `torch.load('model.pth', weights_only=True)` without extra arguments, and how do you fix it?",
+        "code": "# Checkpoint 'model.pth' was saved on cuda:0.\n# Now running on a CPU-only server:\nmodel = CNNModel()",
+        "options": {
+            "A": "`torch.load('model.pth')` raises a `RuntimeError` trying to deserialize tensors onto `cuda:0`; passing `map_location=torch.device('cpu')` (or `map_location='cpu'`) remaps all saved storages to the CPU.",
+            "B": "`torch.load('model.pth')` automatically falls back to `'cpu'` whenever CUDA is unavailable.",
+            "C": "You must load it with `torch.load('model.pth').cpu()`.",
+            "D": "Checkpoints saved on a GPU cannot be loaded on a CPU unless they were moved to CPU before calling `torch.save()`."
+        },
+        "correct": ["A"],
+        "explanation": "By default, `torch.load()` attempts to restore tensors onto the same device they were saved from (`cuda:0`). On a CPU-only machine, this raises `RuntimeError: Attempting to deserialize object on a CUDA device but torch.cuda.is_available() is False`. Passing `map_location=torch.device('cpu')` (or `map_location='cpu'`) dynamically remaps the tensor storages to CPU memory during loading.",
+        "option_explanations": {
+            "A": "Correct. `torch.load('model.pth', map_location=torch.device('cpu'), weights_only=True)` safely loads GPU-saved checkpoints onto the CPU.",
+            "B": "Incorrect. `torch.load()` raises a `RuntimeError` if the original device is not available and `map_location` is omitted.",
+            "C": "Incorrect. Not only does `torch.load('model.pth')` fail *before* returning, an `OrderedDict` has no `.cpu()` method.",
+            "D": "Incorrect. `map_location` allows loading GPU-saved checkpoints onto any device without re-saving."
+        },
+        "competency": "Use map_location in torch.load() for cross-device checkpoint loading",
+        "source": "modules/module_6_pytorch_nn_hands_on/pytorch_nn_convolutional.ipynb"
+    },
+    {
+        "id": "PTCA-F-178",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A7: Model Lifecycle (train, eval, no_grad, inference_mode, save/load)",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "You are loading a pretrained `state_dict` into a modified architecture where you replaced the final classification layer with a new layer of a different name (`self.new_classifier`), so the checkpoint has unexpected keys (`fc.weight`, `fc.bias`) and the model has missing keys (`new_classifier.weight`, `new_classifier.bias`). How can `model.load_state_dict(...)` load the matching backbone weights without raising a `RuntimeError`?",
+        "code": "incompatible = model.load_state_dict(pretrained_state_dict, ________________)",
+        "options": {
+            "A": "Pass `strict=False`, which loads all matching keys and returns a named tuple `(missing_keys, unexpected_keys)`.",
+            "B": "Pass `ignore_mismatch=True`, which automatically resizes or skips any non-matching keys.",
+            "C": "Wrap `model.load_state_dict(pretrained_state_dict)` in `with torch.no_grad():`.",
+            "D": "Pass `partial=True` to `torch.load()`."
+        },
+        "correct": ["A"],
+        "explanation": "By default, `model.load_state_dict(state_dict, strict=True)` requires the keys in `state_dict` to match the keys returned by `model.state_dict()` exactly. Setting `strict=False` ignores non-matching keys (missing or unexpected keys) and returns an `_IncompatibleKeys(missing_keys=[...], unexpected_keys=[...])` named tuple.",
+        "option_explanations": {
+            "A": "Correct. `strict=False` allows partial loading when keys are missing or unexpected, returning `(missing_keys, unexpected_keys)`.",
+            "B": "Incorrect. `ignore_mismatch` is not a valid argument (and note that even `strict=False` still raises an error if two matching keys have *different tensor shapes*).",
+            "C": "Incorrect. `torch.no_grad()` does not affect `load_state_dict` key matching.",
+            "D": "Incorrect. `torch.load()` does not have a `partial` parameter."
+        },
+        "competency": "Load partial checkpoints using model.load_state_dict(state_dict, strict=False)",
+        "source": "modules/module_6_pytorch_nn_hands_on/pytorch_nn_convolutional.ipynb"
+    },
+    {
+        "id": "PTCA-F-179",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A7: Model Lifecycle (train, eval, no_grad, inference_mode, save/load)",
+        "difficulty": "Hard",
+        "multi_select": False,
+        "stem": "Does `model.load_state_dict(state_dict, strict=False)` ignore a mismatch when a key exists in BOTH `state_dict` and `model.state_dict()` (e.g., `'fc.weight'`), but has shape `(1000, 512)` in the checkpoint and shape `(10, 512)` in `model`?",
+        "code": "# Checkpoint has 'fc.weight' of shape (1000, 512)\n# model has 'fc.weight' of shape (10, 512)\nmodel.load_state_dict(state_dict, strict=False)",
+        "options": {
+            "A": "No; `strict=False` only ignores missing or unexpected key names. If a key is present in both `model` and `state_dict` with different tensor shapes, `load_state_dict` still raises `RuntimeError: size mismatch for fc.weight`.",
+            "B": "Yes; `strict=False` skips any key whose shape does not match and adds `'fc.weight'` to `missing_keys`.",
+            "C": "Yes; `strict=False` slices the first 10 rows of `(1000, 512)` to fit `(10, 512)`.",
+            "D": "Yes; `strict=False` resizes `model.fc` in-place to have 1000 output features."
+        },
+        "correct": ["A"],
+        "explanation": "`strict=False` only relaxes key-set equality (ignoring keys that are missing from `state_dict` or unexpected in `state_dict`). If a key name matches in both `model` and `state_dict`, PyTorch attempts to copy the tensor into the model parameter; if their shapes differ (`(1000, 512)` vs `(10, 512)`), it raises `RuntimeError: Error(s) in loading state_dict ... size mismatch for fc.weight`. You must delete or rename `'fc.weight'` in `state_dict` before calling `load_state_dict(..., strict=False)`.",
+        "option_explanations": {
+            "A": "Correct. `strict=False` handles missing/unexpected key names, NOT shape mismatches on shared key names.",
+            "B": "Incorrect. Shared key names with mismatched shapes always raise a `RuntimeError`.",
+            "C": "Incorrect. PyTorch never silently slices mismatched weight tensors.",
+            "D": "Incorrect. `load_state_dict` never alters layer dimensions."
+        },
+        "competency": "Understand that load_state_dict(strict=False) still errors on shape mismatches of matching keys",
+        "source": "modules/module_6_pytorch_nn_hands_on/pytorch_nn_convolutional.ipynb"
+    },
+    {
+        "id": "PTCA-F-180",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A7: Model Lifecycle (train, eval, no_grad, inference_mode, save/load)",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "When saving a general training checkpoint so that training can be seamlessly resumed from Epoch `e` after an interruption (using an stateful optimizer like `Adam`), what should be saved in the checkpoint dictionary passed to `torch.save(checkpoint, 'checkpoint.pt')`?",
+        "code": "",
+        "options": {
+            "A": "A dictionary containing `'epoch'`, `'model_state_dict': model.state_dict()`, `'optimizer_state_dict': optimizer.state_dict()`, and `'loss'` (plus any LR scheduler `state_dict`).",
+            "B": "Only `model.state_dict()`; `Adam` automatically recomputes its historical momentum and variance buffers on the first resumed batch.",
+            "C": "A tuple `(model.parameters(), optimizer.param_groups)`.",
+            "D": "Only `optimizer.state_dict()`, because it already contains a full copy of `model.state_dict()`."
+        },
+        "correct": ["A"],
+        "explanation": "Stateful optimizers like `Adam` or `RMSprop` maintain per-parameter running averages (first and second moment buffers, step counts) in `optimizer.state_dict()`. To resume training accurately, you save a dictionary bundling `model.state_dict()`, `optimizer.state_dict()`, the current `epoch`, and `loss`.",
+        "option_explanations": {
+            "A": "Correct. Saving a dict with `model_state_dict`, `optimizer_state_dict`, `epoch`, and `loss` is the standard PyTorch checkpointing pattern.",
+            "B": "Incorrect. Without `optimizer.state_dict()`, `Adam`'s moving averages $m_t, v_t$ reset to zero, causing a disruptive spike in updates when resuming.",
+            "C": "Incorrect. `model.parameters()` is a generator and cannot be serialized to restore a checkpoint.",
+            "D": "Incorrect. `optimizer.state_dict()` stores optimizer state (`state` and `param_groups`) indexed by parameter IDs, not the model's parameter tensors or `BatchNorm` buffers."
+        },
+        "competency": "Structure a complete training checkpoint with model and optimizer state_dicts",
+        "source": "modules/module_6_pytorch_nn_hands_on/pytorch_nn_convolutional.ipynb"
+    },
+    {
+        "id": "PTCA-F-181",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A7: Model Lifecycle (train, eval, no_grad, inference_mode, save/load)",
+        "difficulty": "Easy",
+        "multi_select": False,
+        "stem": "In `modules/module_6_pytorch_nn_hands_on/pytorch_nn_convolutional.ipynb`, what is the correct order of the five core operations inside the inner training loop for each batch `(images, labels)`?",
+        "code": "for images, labels in trainloader:\n    # Place the 5 operations in order",
+        "options": {
+            "A": "1. `optimizer.zero_grad()` -> 2. `outputs = model(images)` -> 3. `loss = criterion(outputs, labels)` -> 4. `loss.backward()` -> 5. `optimizer.step()`",
+            "B": "1. `outputs = model(images)` -> 2. `loss = criterion(outputs, labels)` -> 3. `optimizer.step()` -> 4. `loss.backward()` -> 5. `optimizer.zero_grad()`",
+            "C": "1. `loss.backward()` -> 2. `outputs = model(images)` -> 3. `loss = criterion(outputs, labels)` -> 4. `optimizer.zero_grad()` -> 5. `optimizer.step()`",
+            "D": "1. `outputs = model(images)` -> 2. `loss = criterion(outputs, labels)` -> 3. `loss.backward()` -> 4. `optimizer.zero_grad()` -> 5. `optimizer.step()`"
+        },
+        "correct": ["A"],
+        "explanation": "As implemented in `pytorch_nn_convolutional.ipynb` Step 6 and `pytorch_nn_linear.ipynb` Step 5: first clear old gradients (`optimizer.zero_grad()`), run the forward pass (`outputs = model(images)`), compute the loss (`loss = criterion(outputs, labels)`), backpropagate to compute new gradients (`loss.backward()`), and update the weights (`optimizer.step()`).",
+        "option_explanations": {
+            "A": "Correct. Zero gradients -> forward pass -> compute loss -> backward pass -> optimizer step.",
+            "B": "Incorrect. Calling `optimizer.step()` *before* `loss.backward()` updates weights using empty/old gradients.",
+            "C": "Incorrect. You cannot call `loss.backward()` before computing `outputs` and `loss`.",
+            "D": "Incorrect. Calling `optimizer.zero_grad()` immediately *before* `optimizer.step()` wipes out the gradients just computed by `loss.backward()`, so the model never learns!"
+        },
+        "competency": "Execute the 5 core steps of a PyTorch training loop in correct order",
+        "source": "modules/module_6_pytorch_nn_hands_on/pytorch_nn_convolutional.ipynb"
+    },
+    {
+        "id": "PTCA-F-182",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A7: Model Lifecycle (train, eval, no_grad, inference_mode, save/load)",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "In `modules/module_6_pytorch_nn_hands_on/pytorch_nn_linear.ipynb`, the loss function is defined with `criterion = torch.nn.MSELoss(reduction='sum')`. During Step 6 (`test_model`), why does the code compute `loss = criterion(outputs, Y_test) / len(X_test)`?",
+        "code": "criterion = torch.nn.MSELoss(reduction='sum')\n\ndef test_model(model, X_test, Y_test):\n    model.eval()\n    with torch.no_grad():\n        outputs = model(X_test)\n        loss = criterion(outputs, Y_test) / len(X_test)\n    print(f'Test Loss: {loss.item():.4f}')",
+        "options": {
+            "A": "Because `reduction='sum'` sums the squared errors across all samples in `X_test` rather than averaging them; dividing by `len(X_test)` normalizes the total sum of squared errors into the per-sample Mean Squared Error so it is independent of dataset size.",
+            "B": "Because `MSELoss` defaults to `reduction='sum'` in PyTorch.",
+            "C": "Because `with torch.no_grad():` multiplies the loss by `len(X_test)` automatically.",
+            "D": "Because `len(X_test)` returns the number of input features (`8`)."
+        },
+        "correct": ["A"],
+        "explanation": "By default, `nn.MSELoss()` uses `reduction='mean'`. However, in `pytorch_nn_linear.ipynb`, `criterion` was explicitly constructed with `reduction='sum'`, which returns $\\sum_{i=1}^N (\\hat{y}_i - y_i)^2$. Dividing by `len(X_test)` ($N$) in `test_model` computes the per-sample mean squared error.",
+        "option_explanations": {
+            "A": "Correct. With `reduction='sum'`, dividing the summed loss by the number of test samples `len(X_test)` yields the per-sample mean loss.",
+            "B": "Incorrect. `nn.MSELoss()` defaults to `reduction='mean'`, not `'sum'`.",
+            "C": "Incorrect. `torch.no_grad()` has no effect on the numerical value of `criterion`.",
+            "D": "Incorrect. `len(X_test)` returns the size of dimension 0 (the number of test samples), not the number of features (`X_test.shape[1]`)."
+        },
+        "competency": "Understand loss reduction modes ('sum' vs 'mean') during evaluation",
+        "source": "modules/module_6_pytorch_nn_hands_on/pytorch_nn_linear.ipynb"
+    },
+    {
+        "id": "PTCA-F-183",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A7: Model Lifecycle (train, eval, no_grad, inference_mode, save/load)",
+        "difficulty": "Easy",
+        "multi_select": False,
+        "stem": "In `modules/module_6_pytorch_nn_hands_on/pytorch_nn_convolutional.ipynb` Step 8, `outputs = model(images)` produces raw class logits of shape `(64, 10)` for a batch of 64 MNIST images across 10 digit classes. What does `_, predicted = torch.max(outputs, 1)` return in `predicted`?",
+        "code": "outputs = model(images)          # shape: (64, 10)\n_, predicted = torch.max(outputs, 1)",
+        "options": {
+            "A": "A 1D tensor of shape `(64,)` with `dtype=torch.int64` containing the predicted class index (`0` to `9`) with the highest logit for each image in the batch.",
+            "B": "A 1D tensor of shape `(64,)` with `dtype=torch.float32` containing the maximum logit value for each image.",
+            "C": "A 1D tensor of shape `(10,)` containing the highest logit across the 64 images for each class.",
+            "D": "A 2D one-hot encoded tensor of shape `(64, 10)`."
+        },
+        "correct": ["A"],
+        "explanation": "When `torch.max(input, dim)` is called with a dimension argument (`dim=1`), it returns a named tuple `(values, indices)`. Unpacking `_, predicted = torch.max(outputs, 1)` discards the maximum logit values (`_`) and assigns the `int64` class indices along dimension 1 (shape `(64,)`) to `predicted` (equivalent to `outputs.argmax(dim=1)`).",
+        "option_explanations": {
+            "A": "Correct. The second return value of `torch.max(outputs, 1)` is the `int64` tensor of argmax indices along the class dimension `1`.",
+            "B": "Incorrect. The maximum logit float values are the *first* return element (discarded into `_`).",
+            "C": "Incorrect. Reducing along `dim=1` (size 10) collapses dimension 1 and preserves batch dimension 0 (size 64).",
+            "D": "Incorrect. `torch.max(..., dim=1)` returns 1D class indices of shape `(64,)`, not a 2D one-hot tensor."
+        },
+        "competency": "Extract predicted class indices from logits using torch.max(outputs, 1)",
+        "source": "modules/module_6_pytorch_nn_hands_on/pytorch_nn_convolutional.ipynb"
+    },
+    {
+        "id": "PTCA-F-184",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A7: Model Lifecycle (train, eval, no_grad, inference_mode, save/load)",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "In `modules/module_6_pytorch_nn_hands_on/pytorch_nn_convolutional.ipynb`, the `CNNModel` contains `self.conv1 = nn.Conv2d(1, 32, 3, 1, 1)` and `self.maxpool1 = nn.MaxPool2d(2, 2)`. Suppose you now have a single 2D test image tensor `img` of shape `(1, 28, 28)` (`[C, H, W]`) and pass it directly to `model(img)`. Why does `x = x.view(x.size(0), -1)` inside `forward()` cause a shape mismatch at `self.fc1 = nn.Linear(64 * 7 * 7, 128)`?",
+        "code": "def forward(self, x):\n    x = self.maxpool1(self.relu(self.conv1(x)))\n    x = self.maxpool2(self.relu(self.conv2(x)))\n    x = x.view(x.size(0), -1)\n    x = self.fc1(x)\n    return x\n\n# Single sample of shape (1, 28, 28) without a batch dimension:\nimg = testset[0][0]  # shape: torch.Size([1, 28, 28])",
+        "options": {
+            "A": "For an unbatched 3D input `(1, 28, 28)`, `conv2` and `maxpool2` produce a 3D tensor of shape `(64, 7, 7)`, so `x.view(x.size(0), -1)` reshapes it to `(64, 49)` instead of `(1, 3136)`, failing at `self.fc1`. Adding a batch dimension via `img.unsqueeze(0)` (shape `(1, 1, 28, 28)`) fixes it.",
+            "B": "`nn.Conv2d` raises a `RuntimeError` immediately because it never accepts 3D `[C, H, W]` inputs.",
+            "C": "`img.unsqueeze(-1)` should be used to convert `(1, 28, 28)` to `(1, 28, 28, 1)`.",
+            "D": "`x.view(x.size(0), -1)` raises a `ValueError` whenever `-1` is used during `model.eval()`."
+        },
+        "correct": ["A"],
+        "explanation": "While modern PyTorch's `nn.Conv2d` and `nn.MaxPool2d` accept unbatched 3D `(C, H, W)` inputs, `x` exits `maxpool2` with 3D shape `(64, 7, 7)`. Then `x.view(x.size(0), -1)` treats `x.size(0) == 64` (the channels!) as the batch size, reshaping to `(64, 49)` instead of `(1, 64*7*7)`, which crashes at `nn.Linear(3136, 128)`. Calling `img.unsqueeze(0)` to pass a 4D `(1, 1, 28, 28)` batch of 1 (or using `nn.Flatten(start_dim=1)` with 4D input) fixes the issue.",
+        "option_explanations": {
+            "A": "Correct. Without a leading batch dimension `(1, 1, 28, 28)`, `x.size(0)` after `conv2` is `64` (output channels), so `x.view(x.size(0), -1)` produces `(64, 49)` instead of `(1, 3136)`.",
+            "B": "Incorrect. PyTorch's `nn.Conv2d` supports both 3D `(C, H, W)` and 4D `(N, C, H, W)` inputs; the crash happens at `x.view(x.size(0), -1)` -> `self.fc1(x)`.",
+            "C": "Incorrect. PyTorch `Conv2d` expects `NCHW` (`(1, 1, 28, 28)` via `unsqueeze(0)`), not `CHWN`.",
+            "D": "Incorrect. `.view(x.size(0), -1)` works identically in `train()` and `eval()`."
+        },
+        "competency": "Add batch dimension with unsqueeze(0) for single-sample CNN inference",
+        "source": "modules/module_6_pytorch_nn_hands_on/pytorch_nn_convolutional.ipynb"
+    },
+    {
+        "id": "PTCA-F-185",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A7: Model Lifecycle (train, eval, no_grad, inference_mode, save/load)",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "Suppose you load a checkpoint into `model` while `model` is still on the CPU, and then move `model.to('cuda')`. If you also load `optimizer.load_state_dict(checkpoint['optimizer_state_dict'])`, why is it important that `model.to('cuda')` happened BEFORE initializing `optimizer` and calling `optimizer.load_state_dict(...)`?",
+        "code": "model = CNNModel()\nmodel.load_state_dict(checkpoint['model_state_dict'])\nmodel.to('cuda')\noptimizer = torch.optim.Adam(model.parameters(), lr=1e-3)\noptimizer.load_state_dict(checkpoint['optimizer_state_dict'])",
+        "options": {
+            "A": "`optimizer.load_state_dict()` casts and moves the loaded optimizer state buffers (such as Adam's `exp_avg` and `exp_avg_sq`) to match the device of the parameters currently registered in `optimizer`; if `model` is already on `'cuda'`, the optimizer state tensors are placed on `'cuda'` automatically.",
+            "B": "`model.load_state_dict()` raises a `RuntimeError` if `model` is already on `'cuda'`.",
+            "C": "`optimizer.load_state_dict()` deletes `model`'s weights if called before `model.to('cuda')`.",
+            "D": "`torch.optim.Adam` cannot be constructed until `model.eval()` has been called."
+        },
+        "correct": ["A"],
+        "explanation": "When `optimizer.load_state_dict()` runs, PyTorch copies the saved optimizer state tensors to the device of the corresponding `nn.Parameter` tensors held by the optimizer. By moving `model.to('cuda')` before creating `optimizer` and calling `optimizer.load_state_dict()`, both the model parameters and the restored optimizer state buffers reside on `'cuda'`.",
+        "option_explanations": {
+            "A": "Correct. `optimizer.load_state_dict()` places optimizer state tensors onto the device of the optimizer's target parameters.",
+            "B": "Incorrect. `model.load_state_dict()` copies tensor values into existing parameters regardless of whether `model` is on CPU or CUDA.",
+            "C": "Incorrect. `optimizer.load_state_dict()` never deletes model weights.",
+            "D": "Incorrect. Optimizers are used for training (`model.train()`), not `model.eval()`."
+        },
+        "competency": "Restore both model and optimizer state_dicts onto a GPU device",
+        "source": "modules/module_6_pytorch_nn_hands_on/pytorch_nn_convolutional.ipynb"
+    },
+    {
+        "id": "PTCA-F-186",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A7: Model Lifecycle (train, eval, no_grad, inference_mode, save/load)",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "In `modules/module_6_pytorch_nn_hands_on/pytorch_nn_linear.ipynb`, the California Housing dataset from `scikit-learn` has `float64` NumPy arrays and a 1D target array `train_target` of shape `(N,)`. Why does Step 2 perform the following two conversions when creating `X_train` and `Y_train`?",
+        "code": "X_train = torch.tensor(train_data, dtype=torch.float32)\nY_train = torch.tensor(train_target, dtype=torch.float32).view(-1, 1)",
+        "options": {
+            "A": "`dtype=torch.float32` matches the default `float32` weight dtype of `nn.Linear` (preventing a `mat1 and mat2 must have the same dtype, but got Double and Float` error), and `.view(-1, 1)` reshapes the 1D targets from `(N,)` to `(N, 1)` to match the `(batch_size, 1)` output shape of `self.Output_linear` in `MSELoss`.",
+            "B": "`torch.tensor()` does not support `float64` NumPy arrays on 64-bit operating systems.",
+            "C": "`.view(-1, 1)` transposes the feature matrix `X_train` so samples are in columns.",
+            "D": "`nn.MSELoss()` requires integer class labels of shape `(N, 1)`."
+        },
+        "correct": ["A"],
+        "explanation": "NumPy arrays default to `float64` (`torch.float64` / `Double`), whereas PyTorch `nn.Linear` layers initialize weights in `torch.float32` (`Float`). Converting `train_data` and `train_target` to `torch.float32` avoids a dtype mismatch error in `nn.Linear`. Furthermore, reshaping `Y_train` with `.view(-1, 1)` ensures each batch target has shape `(batch_size, 1)` matching `model(X)`'s output shape `(batch_size, 1)` instead of unintended `(batch_size, batch_size)` broadcasting in `MSELoss(outputs, Y)`!",
+        "option_explanations": {
+            "A": "Correct. Casting to `float32` matches `nn.Linear` weights, and `.view(-1, 1)` prevents unintended `(B, 1)` vs `(B,)` broadcasting in `MSELoss`.",
+            "B": "Incorrect. `torch.tensor()` supports `float64`, which is why omitting `dtype=torch.float32` creates a `float64` tensor that clashes with `nn.Linear`.",
+            "C": "Incorrect. `.view(-1, 1)` is applied to the 1D target vector `Y_train` to turn it into a 2D column vector `(N, 1)`.",
+            "D": "Incorrect. `MSELoss` is for continuous regression targets (`float32`), not integer class labels."
+        },
+        "competency": "Prepare external float64 regression data and target shapes for nn.Linear and MSELoss",
+        "source": "modules/module_6_pytorch_nn_hands_on/pytorch_nn_linear.ipynb"
+    },
+    {
+        "id": "PTCA-F-187",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A7: Model Lifecycle (train, eval, no_grad, inference_mode, save/load)",
+        "difficulty": "Hard",
+        "multi_select": False,
+        "stem": "What silent bug occurs in a regression training loop if `outputs = model(X)` has shape `(batch_size, 1)` (`(10, 1)`), the target `Y` was left as a 1D tensor of shape `(batch_size,)` (`(10,)`), and you compute `loss = nn.MSELoss()(outputs, Y)`?",
+        "code": "outputs = torch.randn(10, 1, requires_grad=True)\nY = torch.randn(10)\nloss = torch.nn.MSELoss()(outputs, Y)",
+        "options": {
+            "A": "Instead of raising a shape error, `outputs - Y` broadcasts `(10, 1)` and `(10,)` into a `(10, 10)` pairwise difference matrix (comparing every prediction against every target in the batch) and emits a `UserWarning`, causing the model to train toward predicting the batch mean!",
+            "B": "`nn.MSELoss()` raises a `ValueError` immediately whenever `outputs.ndim != Y.ndim`.",
+            "C": "`nn.MSELoss()` automatically squeezes `outputs` to `(10,)` before subtracting `Y`.",
+            "D": "Only the first element `Y[0]` is compared against all 10 predictions."
+        },
+        "correct": ["A"],
+        "explanation": "Because `(10, 1)` and `(10,)` are broadcastable to `(10, 10)`, `MSELoss()(outputs, Y)` computes the average squared difference across all $10 \\times 10 = 100$ pairs $(\\hat{y}_i - y_j)^2$ instead of the 10 aligned pairs $(\\hat{y}_i - y_i)^2$! PyTorch logs a `UserWarning: Using a target size (torch.Size([10])) that is different to the input size (torch.Size([10, 1])). This will likely lead to incorrect results due to broadcasting.` That is why `pytorch_nn_linear.ipynb` explicitly reshapes targets with `.view(-1, 1)`.",
+        "option_explanations": {
+            "A": "Correct. `(B, 1)` and `(B,)` broadcast to `(B, B)`, silently corrupting regression training unless `Y` is reshaped to `(B, 1)` (or `outputs` squeezed to `(B,)`).",
+            "B": "Incorrect. `MSELoss` issues a `UserWarning` rather than raising an exception because broadcasting succeeds.",
+            "C": "Incorrect. `MSELoss` does not automatically squeeze singleton dimensions.",
+            "D": "Incorrect. All 10 elements of `Y` are broadcast across all 10 rows of `outputs`."
+        },
+        "competency": "Diagnose the (B, 1) vs (B,) broadcasting bug in nn.MSELoss",
+        "source": "modules/module_6_pytorch_nn_hands_on/pytorch_nn_linear.ipynb"
+    },
+    {
+        "id": "PTCA-F-188",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A7: Model Lifecycle (train, eval, no_grad, inference_mode, save/load)",
+        "difficulty": "Medium",
+        "multi_select": True,
+        "stem": "Which TWO of the following statements accurately describe using `@torch.no_grad()` or `@torch.inference_mode()` as a Python function decorator on an evaluation function `def evaluate(model, dataloader):`? (Select TWO)",
+        "code": "@torch.inference_mode()\ndef evaluate(model, dataloader):\n    model.eval()\n    ...",
+        "options": {
+            "A": "Both `torch.no_grad()` and `torch.inference_mode()` can be used either as a `with` context manager or as a `@` function decorator wrapping an entire function.",
+            "B": "Decorating `evaluate` with `@torch.inference_mode()` still requires calling `model.eval()` if the model has `Dropout` or `BatchNorm` layers that should run in evaluation mode.",
+            "C": "Using `@torch.no_grad()` as a decorator permanently disables gradients globally even after `evaluate()` returns.",
+            "D": "`@torch.inference_mode()` can only decorate `nn.Module.forward` and raises a `TypeError` on standalone functions."
+        },
+        "correct": ["A", "B"],
+        "explanation": "Both `torch.no_grad()` and `torch.inference_mode()` implement Python's context manager protocol and `ContextDecorator`, so they work identically as `with ...:` blocks or `@...` function decorators. When the decorated function returns, the previous grad/inference mode is automatically restored. And because neither changes `model.training`, `model.eval()` is still needed.",
+        "option_explanations": {
+            "A": "Correct. Both can be used as `with` context managers or `@` function decorators.",
+            "B": "Correct. `@torch.inference_mode()` only controls autograd/view tracking; `model.eval()` is still required to set `model.training = False`.",
+            "C": "Incorrect. As a decorator, `@torch.no_grad()` scopes the disabled grad state strictly to the execution of `evaluate()`.",
+            "D": "Incorrect. `@torch.inference_mode()` can decorate any Python callable."
+        },
+        "competency": "Use @torch.no_grad() and @torch.inference_mode() as function decorators alongside model.eval()",
+        "source": "modules/module_6_pytorch_nn_hands_on/pytorch_nn_linear.ipynb"
+    },
+    {
+        "id": "PTCA-F-189",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A7: Model Lifecycle (train, eval, no_grad, inference_mode, save/load)",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "Why do you want to keep track of the best validation loss during training and save a checkpoint via `copy.deepcopy(model.state_dict())` instead of simply assigning `best_weights = model.state_dict()` in memory?",
+        "code": "if val_loss < best_val_loss:\n    best_val_loss = val_loss\n    best_weights = model.state_dict()  # Bug! Why?",
+        "options": {
+            "A": "Because the tensors inside `model.state_dict()` share underlying storage with the live `model` parameters; as `optimizer.step()` mutates the model weights in-place in subsequent epochs, `best_weights` is mutated too unless you deep-copy it (`copy.deepcopy(model.state_dict())`) or serialize it to disk (`torch.save`).",
+            "B": "Because `model.state_dict()` automatically deletes itself at the end of every epoch.",
+            "C": "Because `model.state_dict()` returns a one-time generator that becomes empty once accessed.",
+            "D": "There is no bug; `model.state_dict()` always allocates deep copies of every parameter tensor."
+        },
+        "correct": ["A"],
+        "explanation": "`model.state_dict()` returns an `OrderedDict` whose tensor values share underlying storage (`data_ptr`) with the model's live parameters and buffers. As training continues and `optimizer.step()` updates parameters in-place, the tensors inside `best_weights = model.state_dict()` also change! To snapshot weights in memory, you must use `copy.deepcopy(model.state_dict())` (or save to disk/buffer via `torch.save(model.state_dict(), path)`).",
+        "option_explanations": {
+            "A": "Correct. `state_dict()` holds references to the live parameter storages; in-place optimizer updates mutate them unless deep-copied or saved with `torch.save`.",
+            "B": "Incorrect. `state_dict()` is a normal `OrderedDict` and is not deleted automatically.",
+            "C": "Incorrect. `model.parameters()` is a generator, whereas `model.state_dict()` is an `OrderedDict`.",
+            "D": "Incorrect. `model.state_dict()` creates detached tensor views sharing the same underlying storage, not deep copies."
+        },
+        "competency": "Avoid in-memory state_dict aliasing bug when snapshotting best validation weights",
+        "source": "modules/module_6_pytorch_nn_hands_on/pytorch_nn_convolutional.ipynb"
+    },
+    {
+        "id": "PTCA-F-190",
+        "domain": "PyTorch Fundamentals",
+        "domain_code": "A",
+        "subtopic": "A7: Model Lifecycle (train, eval, no_grad, inference_mode, save/load)",
+        "difficulty": "Easy",
+        "multi_select": False,
+        "stem": "In `modules/module_6_pytorch_nn_hands_on/pytorch_nn_convolutional.ipynb`, why is `shuffle=True` used for `trainloader` while `shuffle=False` is used for `testloader` across the model lifecycle?",
+        "code": "trainloader = torch.utils.data.DataLoader(trainset, batch_size=64, shuffle=True)\ntestloader = torch.utils.data.DataLoader(testset, batch_size=64, shuffle=False)",
+        "options": {
+            "A": "`shuffle=True` during training randomizes mini-batch composition each epoch to reduce gradient correlation and improve generalization, whereas `shuffle=False` during testing/evaluation preserves a deterministic sample order for reproducible evaluation and inspection.",
+            "B": "`shuffle=True` is prohibited on test sets and raises a `ValueError` when `model.eval()` is active.",
+            "C": "`shuffle=False` disables `Dropout` inside the `DataLoader`.",
+            "D": "`shuffle=True` automatically augments the training images with random horizontal flips."
+        },
+        "correct": ["A"],
+        "explanation": "During training, shuffling the dataset at each epoch (`shuffle=True`) prevents the optimizer from seeing samples in a fixed/sorted order (such as all class-0 digits before class-1 digits) and improves stochastic gradient descent convergence. During testing or validation, parameters are not updated, so `shuffle=False` avoids unnecessary index shuffling and keeps predictions aligned with dataset indices.",
+        "option_explanations": {
+            "A": "Correct. Training benefits from randomized mini-batches each epoch (`shuffle=True`), while evaluation uses deterministic ordering (`shuffle=False`).",
+            "B": "Incorrect. `DataLoader` has no knowledge of `model.eval()` and does not error if `shuffle=True` is passed.",
+            "C": "Incorrect. `Dropout` is controlled by `model.train()` / `model.eval()`, not `DataLoader`.",
+            "D": "Incorrect. `shuffle=True` only permutes sample indices; image augmentation is performed via `torchvision.transforms`."
+        },
+        "competency": "Configure DataLoader shuffling appropriately for training vs evaluation phases",
+        "source": "modules/module_6_pytorch_nn_hands_on/pytorch_nn_convolutional.ipynb"
+    }
+]
+
+def main():
+    import random
+    out_dir = "/Users/batakkh/Documents/notes/PyTorch-Associate-Training-main/ptca_exam_prep/data"
+    os.makedirs(out_dir, exist_ok=True)
+    out_path = os.path.join(out_dir, "domain_a2.json")
+
+    rng = random.Random(202602)
+    keys = ["A", "B", "C", "D"]
+    for idx, q in enumerate(questions):
+        if not q["multi_select"]:
+            # Cycle target correct key evenly across A, B, C, D and permute remaining keys
+            target_correct = keys[idx % 4]
+            other_keys = [k for k in keys if k != target_correct]
+            rng.shuffle(other_keys)
+            # Old key 'A' goes to target_correct; old 'B', 'C', 'D' map to other_keys
+            old_to_new = {"A": target_correct, "B": other_keys[0], "C": other_keys[1], "D": other_keys[2]}
+        else:
+            perm = list(keys)
+            rng.shuffle(perm)
+            old_to_new = dict(zip(keys, perm))
+
+        new_to_old = {v: k for k, v in old_to_new.items()}
+        q["options"] = {k: q["options"][new_to_old[k]] for k in keys}
+        q["option_explanations"] = {k: q["option_explanations"][new_to_old[k]] for k in keys}
+        q["correct"] = sorted(old_to_new[c] for c in q["correct"])
+
+    assert len(questions) == 95, f"Expected 95 questions, got {len(questions)}"
+    expected_ids = [f"PTCA-F-{i:03d}" for i in range(96, 191)]
+    actual_ids = [q["id"] for q in questions]
+    assert actual_ids == expected_ids, f"ID mismatch! Expected PTCA-F-096..190, got {actual_ids[:3]}..{actual_ids[-3:]}"
+
+    required_keys = {
+        "id", "domain", "domain_code", "subtopic", "difficulty",
+        "multi_select", "stem", "code", "options", "correct",
+        "explanation", "option_explanations", "competency", "source"
+    }
+
+    for q in questions:
+        assert set(q.keys()) == required_keys, f"Keys mismatch in {q['id']}: {set(q.keys()) ^ required_keys}"
+        assert q["domain"] == "PyTorch Fundamentals"
+        assert q["domain_code"] == "A"
+        assert q["difficulty"] in ("Easy", "Medium", "Hard")
+        assert isinstance(q["multi_select"], bool)
+        assert q["stem"].strip() != ""
+        assert isinstance(q["code"], str)
+        assert set(q["options"].keys()) == {"A", "B", "C", "D"}
+        assert set(q["option_explanations"].keys()) == {"A", "B", "C", "D"}
+        for k in ("A", "B", "C", "D"):
+            assert q["options"][k].strip() != "", f"Empty option {k} in {q['id']}"
+            assert q["option_explanations"][k].strip() != "", f"Empty option_explanation {k} in {q['id']}"
+        assert isinstance(q["correct"], list) and len(q["correct"]) >= 1
+        if q["multi_select"]:
+            assert len(q["correct"]) >= 2, f"multi_select True but len(correct) < 2 in {q['id']}"
+        else:
+            assert len(q["correct"]) == 1, f"multi_select False but len(correct) != 1 in {q['id']}"
+        assert q["explanation"].strip() != ""
+        assert q["competency"].strip() != ""
+        assert q["source"].strip() != ""
+
+    with open(out_path, "w", encoding="utf-8") as f:
+        json.dump(questions, f, indent=2, ensure_ascii=False)
+
+    code_count = sum(1 for q in questions if q["code"].strip() != "")
+    print(f"Successfully wrote {len(questions)} questions to {out_path}")
+    print(f"Questions with code snippets: {code_count}/{len(questions)} ({code_count / len(questions) * 100:.1f}%)")
+
+if __name__ == "__main__":
+    main()

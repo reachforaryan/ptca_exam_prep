@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PTCA Certification Workbench — 500 Exam Questions</title>
+  <link rel="stylesheet" href="styles.css?v=2" />
+</head>
+<body>
+  <div class="app-shell">
+    <!-- Top Bar -->
+    <header class="top-bar">
+      <div class="brand-group">
+        <span class="brand-mark">PT</span>
+        <h1 class="brand-title">PTCA Exam Workbench</h1>
+        <span id="storage-badge" class="storage-pill" title="Where your answers and personal notes are persisted">
+          <span id="storage-dot" class="storage-dot local"></span>
+          <span id="storage-text">Checking storage...</span>
+        </span>
+      </div>
+
+      <div class="top-controls">
+        <div class="mode-tabs" role="tablist" aria-label="Study mode">
+          <button id="tab-practice" class="mode-tab active" role="tab" aria-selected="true">Practice Mode</button>
+          <button id="tab-mock" class="mode-tab" role="tab" aria-selected="false">Mock Exam (60 Qs)</button>
+          <button id="tab-notes" class="mode-tab" role="tab" aria-selected="false">My Notes &amp; Analytics</button>
+        </div>
+
+        <button id="btn-export" class="btn" title="Download all your answers, bookmarks, and personal notes as a JSON file">Export JSON</button>
+        <label class="btn" for="input-import" title="Import a previously exported JSON notes/progress file">
+          Import JSON
+          <input id="input-import" type="file" accept=".json" style="display:none;" />
+        </label>
+        <button id="btn-reset-all" class="btn" title="Clear answer history while keeping your personal notes">Reset Attempts</button>
+        <button id="btn-theme" class="btn" title="Toggle light / dark theme">Dark Mode</button>
+      </div>
+    </header>
+
+    <!-- Left Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-section">
+        <div class="stats-strip">
+          <div class="stat-box">
+            <span id="stat-answered" class="stat-val tabular-nums">0/500</span>
+            <span class="stat-lbl">Answered</span>
+          </div>
+          <div class="stat-box">
+            <span id="stat-correct" class="stat-val correct tabular-nums">0</span>
+            <span class="stat-lbl">Correct</span>
+          </div>
+          <div class="stat-box">
+            <span id="stat-wrong" class="stat-val wrong tabular-nums">0</span>
+            <span class="stat-lbl">Wrong</span>
+          </div>
+          <div class="stat-box">
+            <span id="stat-notes" class="stat-val notes tabular-nums">0</span>
+            <span class="stat-lbl">Notes</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="sidebar-section filter-stack">
+        <input id="filter-search" type="search" class="input-control" placeholder="Search ID, API, or concept (e.g. autocast)..." />
+        <select id="filter-domain" class="input-control" aria-label="Filter by domain">
+          <option value="ALL">All Domains (500 Qs — 100%)</option>
+          <option value="A">Domain A: PyTorch Fundamentals (38% — 190 Qs)</option>
+          <option value="B">Domain B: Model Development (20% — 100 Qs)</option>
+          <option value="C">Domain C: Performance &amp; Optimization (26% — 130 Qs)</option>
+          <option value="D">Domain D: Data Handling (16% — 80 Qs)</option>
+        </select>
+        <div class="filter-row">
+          <select id="filter-subtopic" class="input-control" aria-label="Filter by subtopic">
+            <option value="ALL">All Subtopics</option>
+          </select>
+          <select id="filter-difficulty" class="input-control" aria-label="Filter by difficulty">
+            <option value="ALL">All Difficulties</option>
+            <option value="Easy">Easy</option>
+            <option value="Medium">Medium</option>
+            <option value="Hard">Hard</option>
+          </select>
+        </div>
+
+        <div class="status-pills" role="group" aria-label="Filter by status">
+          <button class="status-pill active" data-status="ALL">All</button>
+          <button class="status-pill" data-status="UNANSWERED">Unanswered</button>
+          <button class="status-pill" data-status="WRONG">Wrong</button>
+          <button class="status-pill" data-status="CORRECT">Correct</button>
+          <button class="status-pill" data-status="BOOKMARKED">Saved</button>
+          <button class="status-pill" data-status="HAS_NOTE">Has Note</button>
+        </div>
+      </div>
+
+      <div class="q-grid-header">
+        <span id="grid-count-label" class="tabular-nums">Showing 500 questions</span>
+        <span class="kbd-hint">Keys: A-D, ←/→, N</span>
+      </div>
+
+      <div class="q-grid-scroll">
+        <div id="question-grid" class="q-grid"></div>
+      </div>
+    </aside>
+
+    <!-- Main Content Stage -->
+    <main class="main-stage">
+      <div class="stage-container">
+        <!-- Mock Exam Control Banner (only in Mock Mode) -->
+        <div id="mock-banner" class="mock-banner" style="display: none;">
+          <div>
+            <strong>PTCA Timed Mock Exam (60 Questions)</strong>
+            <div style="font-size: 0.8rem; color: var(--text-secondary);">
+              Weighted: 23 Fundamentals · 12 Model Dev · 16 Optimization · 9 Data Handling (Pass: 75%)
+            </div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <span id="mock-timer-display" class="mock-timer tabular-nums">120:00</span>
+            <button id="btn-mock-submit" class="btn btn-primary">Submit &amp; Score Exam</button>
+            <button id="btn-mock-new" class="btn">New 60-Q Mock</button>
+          </div>
+        </div>
+
+        <!-- Question View -->
+        <section id="question-view" class="question-surface">
+          <div class="q-meta-bar">
+            <div class="q-badges">
+              <span id="q-id-badge" class="badge badge-id">PTCA-F-001</span>
+              <span id="q-domain-badge" class="badge">PyTorch Fundamentals</span>
+              <span id="q-subtopic-badge" class="badge">Subtopic</span>
+              <span id="q-diff-badge" class="badge badge-easy">Easy</span>
+              <span id="q-multi-badge" class="badge badge-multi" style="display: none;">Select TWO</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span id="q-position-text" class="kbd-hint tabular-nums">1 of 500</span>
+              <button id="btn-bookmark" class="btn" title="Bookmark question for review (Key: B)">Bookmark</button>
+            </div>
+          </div>
+
+          <p id="q-stem" class="q-stem"></p>
+
+          <div id="q-code-wrap" class="code-block-wrap" style="display: none;">
+            <div class="code-header">
+              <span>Python · PyTorch 2.x</span>
+              <button id="btn-copy-code" class="copy-code-btn">Copy code</button>
+            </div>
+            <pre class="code-pre"><code id="q-code"></code></pre>
+          </div>
+
+          <div id="q-options" class="options-list"></div>
+
+          <div class="q-action-bar">
+            <div class="nav-btn-group">
+              <button id="btn-prev" class="btn">← Previous</button>
+              <button id="btn-next" class="btn">Next →</button>
+            </div>
+            <div class="nav-btn-group">
+              <button id="btn-check-multi" class="btn btn-primary" style="display: none;">Check Answer</button>
+              <button id="btn-retry-one" class="btn" style="display: none;">Clear My Answer</button>
+            </div>
+          </div>
+
+          <!-- Instant Verdict & Explanation -->
+          <div id="q-explanation-box" class="explanation-box" style="display: none;">
+            <div class="verdict-header">
+              <h2 id="q-verdict-title" class="verdict-title"></h2>
+              <span id="q-correct-letter-pill" class="badge badge-id"></span>
+            </div>
+            <p id="q-explanation-text" class="explanation-prose"></p>
+            <div id="q-option-breakdown" class="option-breakdown"></div>
+            <div class="meta-footer">
+              <div><strong>Tested Competency:</strong> <span id="q-competency"></span></div>
+              <div><strong>Source:</strong> <span id="q-source"></span></div>
+            </div>
+          </div>
+
+          <!-- Personal Note / Comment Box -->
+          <div class="note-surface">
+            <div class="note-header">
+              <label for="q-note-input" class="note-title">My Personal Study Note / Comment</label>
+              <span id="q-note-status" class="note-status">Auto-saved locally</span>
+            </div>
+            <textarea
+              id="q-note-input"
+              class="note-textarea"
+              placeholder="Write your personal notes, takeaways, or why a distractor tripped you up... (Automatically saved to SQLite &amp; JSON)"
+            ></textarea>
+          </div>
+        </section>
+
+        <!-- Notes & Analytics View -->
+        <section id="notes-analytics-view" class="view-panel" style="display: none;">
+          <h2 style="margin-top: 0;">Domain Mastery &amp; Personal Study Notes</h2>
+          <p style="color: var(--text-secondary); font-size: 0.92rem; max-width: 70ch;">
+            Track your accuracy across the four official Linux Foundation PTCA domains and review every question where you wrote a personal note or missed an answer.
+          </p>
+
+          <div id="domain-analytics-bars" class="domain-bars"></div>
+
+          <div style="display: flex; align-items: center; justify-content: space-between; border-top: 1px solid var(--border-subtle); padding-top: 18px;">
+            <h3 style="margin: 0;">Saved Personal Notes &amp; Missed Questions</h3>
+            <select id="notes-view-filter" class="input-control" style="width: 240px;">
+              <option value="NOTES">Questions with My Notes</option>
+              <option value="WRONG">Questions Answered Incorrectly</option>
+              <option value="BOOKMARKED">Bookmarked Questions</option>
+            </select>
+          </div>
+
+          <div id="notes-review-list" class="notes-list"></div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <script src="questions.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

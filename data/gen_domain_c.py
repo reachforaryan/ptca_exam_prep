@@ -1,0 +1,3443 @@
+import json
+
+questions_c1 = [
+    {
+        "id": "PTCA-P-001",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C1: Eager vs Graph Mode & torch.compile",
+        "difficulty": "Easy",
+        "multi_select": False,
+        "stem": "What is the primary trade-off between PyTorch's default Eager Mode and Graph (Compiler) Mode?",
+        "code": "",
+        "options": {
+            "A": "Eager Mode executes operations immediately and allows debugging with standard Python tools like `print` and `pdb`, whereas Graph Mode captures a multi-operator computation graph first to enable compiler-level optimizations like kernel fusion.",
+            "B": "Eager Mode only supports CPU execution, whereas Graph Mode is required to execute any tensor operation on CUDA GPUs.",
+            "C": "Eager Mode requires ahead-of-time C++ compilation before running a script, whereas Graph Mode interprets Python line-by-line without compilation.",
+            "D": "Eager Mode disables autograd gradient tracking by default, whereas Graph Mode is the only way to compute backward passes."
+        },
+        "correct": ["A"],
+        "explanation": "PyTorch Eager Mode runs operations immediately as Python statements execute, making prototyping and debugging with `print` or `pdb` straightforward. However, eager execution only has visibility into a single operator at a time. Graph/Compiler mode (`torch.compile`) constructs a computational graph first and optimizes across multiple operations (e.g., fusing kernels and reducing memory bandwidth overhead).",
+        "option_explanations": {
+            "A": "Correct. Eager mode prioritizes immediate execution and Pythonic debugging, while compiler/graph mode captures a broader graph for holistic optimization.",
+            "B": "Incorrect. Both Eager Mode and Graph Mode fully support CPU and GPU execution.",
+            "C": "Incorrect. Eager Mode runs immediately via Python without ahead-of-time compilation, whereas Graph Mode performs JIT graph capture and compilation.",
+            "D": "Incorrect. Autograd works seamlessly in both Eager Mode and `torch.compile` (via AOTAutograd)."
+        },
+        "competency": "Explain the difference between Eager Mode and Graph Mode execution in PyTorch",
+        "source": "modules/module_7_basics_of_compiler/compiler.ipynb"
+    },
+    {
+        "id": "PTCA-P-002",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C1: Eager vs Graph Mode & torch.compile",
+        "difficulty": "Easy",
+        "multi_select": False,
+        "stem": "Which major release of PyTorch introduced `torch.compile` and full compilation graph support as its flagship feature?",
+        "code": "import torch\n\nopt_model = torch.compile(model)",
+        "options": {
+            "A": "PyTorch 1.0",
+            "B": "PyTorch 1.8",
+            "C": "PyTorch 2.0",
+            "D": "PyTorch 3.0"
+        },
+        "correct": ["C"],
+        "explanation": "Full compiler-level computational graph optimization via `torch.compile` (powered by TorchDynamo, AOTAutograd, and TorchInductor) was the defining capability that justified the major release of PyTorch 2.0.",
+        "option_explanations": {
+            "A": "Incorrect. PyTorch 1.0 introduced TorchScript (`torch.jit`), not `torch.compile`.",
+            "B": "Incorrect. PyTorch 1.8 did not include `torch.compile`.",
+            "C": "Correct. `torch.compile` was introduced as the centerpiece of PyTorch 2.0.",
+            "D": "Incorrect. `torch.compile` debuted in PyTorch 2.0."
+        },
+        "competency": "Identify the role and history of torch.compile in PyTorch 2.0",
+        "source": "modules/module_7_basics_of_compiler/compiler.ipynb"
+    },
+    {
+        "id": "PTCA-P-003",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C1: Eager vs Graph Mode & torch.compile",
+        "difficulty": "Easy",
+        "multi_select": True,
+        "stem": "Which THREE of the following are the core architectural components that power `torch.compile`? (Select 3)",
+        "code": "",
+        "options": {
+            "A": "TorchDynamo",
+            "B": "AOTAutograd",
+            "C": "TorchInductor",
+            "D": "DataParallel (DP)"
+        },
+        "correct": ["A", "B", "C"],
+        "explanation": "`torch.compile` relies on three main Python-based components: TorchDynamo (Python-level bytecode JIT tracer that extracts FX graphs), AOTAutograd (ahead-of-time capture of backward pass graphs for training), and TorchInductor (the default compiler backend that generates optimized Triton/C++ kernels).",
+        "option_explanations": {
+            "A": "Correct. TorchDynamo intercepts Python bytecode at runtime and extracts sequences of PyTorch operations into an FX graph.",
+            "B": "Correct. AOTAutograd captures the backward pass ahead of time so both forward and backward passes can be accelerated.",
+            "C": "Correct. TorchInductor is the default compiler backend that translates captured FX graphs into Triton (GPU) or C++/OpenMP (CPU) kernels.",
+            "D": "Incorrect. `DataParallel` is a legacy single-node multi-GPU wrapper, not a component of `torch.compile`."
+        },
+        "competency": "Identify the three core components of torch.compile",
+        "source": "modules/module_7_basics_of_compiler/compiler.ipynb"
+    },
+    {
+        "id": "PTCA-P-004",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C1: Eager vs Graph Mode & torch.compile",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "How does TorchDynamo capture a PyTorch function into a computational graph during `torch.compile`?",
+        "code": "@torch.compile\ndef compute(x, y):\n    return torch.sin(x) + torch.cos(y)",
+        "options": {
+            "A": "It parses the Python source file AST statically before the Python interpreter starts.",
+            "B": "It dynamically modifies and traces Python bytecode before execution, recording linear sequences of PyTorch operations into an FX graph.",
+            "C": "It requires the user to rewrite all Python functions in a restricted C++ DSL.",
+            "D": "It hooks exclusively into CUDA driver calls after the GPU kernels have already finished executing."
+        },
+        "correct": ["B"],
+        "explanation": "TorchDynamo is a Python-level just-in-time (JIT) tracer that hooks into Python frame evaluation, dynamically inspecting and modifying Python bytecode prior to execution and extracting linear sequences of PyTorch operations into an FX graph.",
+        "option_explanations": {
+            "A": "Incorrect. TorchDynamo operates at the Python bytecode level at runtime (JIT), not via static source AST parsing ahead of execution.",
+            "B": "Correct. TorchDynamo dynamically modifies Python bytecode and traces executed PyTorch operations into an FX graph.",
+            "C": "Incorrect. `torch.compile` works directly on standard Python functions and `nn.Module` objects.",
+            "D": "Incorrect. TorchDynamo operates at the Python bytecode level on both CPU and GPU before backend compilation."
+        },
+        "competency": "Understand how TorchDynamo captures FX graphs via Python bytecode tracing",
+        "source": "modules/module_7_basics_of_compiler/compiler.ipynb"
+    },
+    {
+        "id": "PTCA-P-005",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C1: Eager vs Graph Mode & torch.compile",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "Consider the following script from `torch_dynamo_example.py`. When `fn(x, 2)` is executed with `TORCH_LOGS=graph_code`, what does the traced FX `forward` graph contain?",
+        "code": "import torch\n\n@torch.compile\ndef fn(x, n):\n    y = x ** 2\n    if n >= 0:\n        return (n + 1) * y\n    else:\n        return y / n\n\nx = torch.randn(200)\nfn(x, 2)",
+        "options": {
+            "A": "Both branches of the `if/else` statement represented as a dynamic control-flow node with `n` as a symbolic tensor.",
+            "B": "A linear sequence of operations without the `if` statement: `y = l_x_ ** 2` followed by `mul = 3 * y`, because `n=2` was constant-folded along the taken branch.",
+            "C": "An empty graph, because TorchDynamo refuses to compile any function containing an `if` keyword.",
+            "D": "Only the `else` branch `y / n`, because TorchDynamo always traces the last return statement in a function."
+        },
+        "correct": ["B"],
+        "explanation": "Because TorchDynamo is a tracer, given inputs `(x, 2)`, it executes the function and records the linear sequence of tensor operations actually taken. Since `n=2` is a Python integer satisfying `n >= 0`, Dynamo removes the `if` statement, folds `n + 1` into `3`, and records `y = l_x_ ** 2` and `mul = 3 * y`.",
+        "option_explanations": {
+            "A": "Incorrect. An FX graph traced by TorchDynamo records a linear sequence of instructions without Python branching.",
+            "B": "Correct. Dynamo traces only the executed path for `n=2`, folding `2 + 1` into `3` and omitting the `if/else` branch from the FX graph.",
+            "C": "Incorrect. Python control flow on non-tensor constants (`n=2`) is handled cleanly by tracing the taken branch and placing a guard on `n`.",
+            "D": "Incorrect. Since `n = 2 >= 0` is True, the first branch `(n + 1) * y` is traced."
+        },
+        "competency": "Trace how TorchDynamo handles Python control flow and constant folding",
+        "source": "modules/module_7_basics_of_compiler/torch_dynamo_example.py"
+    },
+    {
+        "id": "PTCA-P-006",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C1: Eager vs Graph Mode & torch.compile",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "Which environment variable can you set when running a Python script to inspect the FX graph code generated by `torch.compile`?",
+        "code": "# Command line invocation:\n# <ENV_VAR> python torch_dynamo_example.py",
+        "options": {
+            "A": "TORCH_LOGS=graph_code",
+            "B": "PYTORCH_DUMP_AST=1",
+            "C": "CUDA_LAUNCH_BLOCKING=1",
+            "D": "TORCH_DISTRIBUTED_DEBUG=DETAIL"
+        },
+        "correct": ["A"],
+        "explanation": "Running `TORCH_LOGS=graph_code python script.py` instructs PyTorch's compiler logging subsystem to print the Python representation of the FX graphs captured by TorchDynamo.",
+        "option_explanations": {
+            "A": "Correct. `TORCH_LOGS=graph_code` outputs the traced FX `forward` function code.",
+            "B": "Incorrect. `PYTORCH_DUMP_AST` is not a valid PyTorch compiler logging variable.",
+            "C": "Incorrect. `CUDA_LAUNCH_BLOCKING=1` forces synchronous CUDA kernel launches for debugging GPU errors, not printing FX graphs.",
+            "D": "Incorrect. `TORCH_DISTRIBUTED_DEBUG` is used for debugging DDP/distributed jobs."
+        },
+        "competency": "Use TORCH_LOGS=graph_code to inspect TorchDynamo FX graphs",
+        "source": "modules/module_7_basics_of_compiler/compiler.ipynb"
+    },
+    {
+        "id": "PTCA-P-007",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C1: Eager vs Graph Mode & torch.compile",
+        "difficulty": "Easy",
+        "multi_select": False,
+        "stem": "What is the role of `AOTAutograd` within the `torch.compile` stack?",
+        "code": "opt_model = torch.compile(model)\nout = opt_model(x)\nloss = criterion(out, target)\nloss.backward()",
+        "options": {
+            "A": "It replaces the model's optimizer with a second-order Hessian solver.",
+            "B": "It captures the computational graph of the backward pass ahead of time and preserves its intermediate representation (IR) so TorchInductor can accelerate both forward and backward passes during training.",
+            "C": "It automatically converts all model weights to 8-bit integers for inference-only deployment.",
+            "D": "It shards gradients across multiple nodes using NCCL all-reduce."
+        },
+        "correct": ["B"],
+        "explanation": "While TorchDynamo captures the forward pass of a model, supporting training requires generating and optimizing the backward pass as well. `AOTAutograd` captures the backward pass graph ahead of time (prior to execution) so that TorchInductor can compile and fuse both the forward and backward graphs.",
+        "option_explanations": {
+            "A": "Incorrect. AOTAutograd does not alter the mathematical optimization algorithm.",
+            "B": "Correct. AOTAutograd traces the autograd backward pass into an FX graph so TorchInductor can optimize both forward and backward execution.",
+            "C": "Incorrect. AOTAutograd is specifically for ahead-of-time autograd backward graph capture, not INT8 quantization.",
+            "D": "Incorrect. Gradient synchronization across GPUs is handled by DDP/FSDP, not AOTAutograd."
+        },
+        "competency": "Explain how AOTAutograd enables training optimization in torch.compile",
+        "source": "modules/module_7_basics_of_compiler/compiler.ipynb"
+    },
+    {
+        "id": "PTCA-P-008",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C1: Eager vs Graph Mode & torch.compile",
+        "difficulty": "Easy",
+        "multi_select": False,
+        "stem": "What is the default compiler backend used by `torch.compile`, and what target code does it generate for GPUs?",
+        "code": "opt_fn = torch.compile(fn)  # default backend",
+        "options": {
+            "A": "TorchScript, which generates Python bytecode.",
+            "B": "TorchInductor, which translates the captured PyTorch graph into OpenAI Triton kernels for GPUs (and C++/OpenMP for CPUs).",
+            "C": "ONNX Runtime, which exports protobuf files to disk.",
+            "D": "NVCC, which requires manual `.cu` files written by the user."
+        },
+        "correct": ["B"],
+        "explanation": "TorchInductor is the default backend compiler in `torch.compile`. It takes the FX graphs produced by TorchDynamo and AOTAutograd and compiles them into optimized OpenAI Triton kernels for GPUs across major vendors (and C++/OpenMP for CPUs).",
+        "option_explanations": {
+            "A": "Incorrect. TorchScript is a legacy JIT representation, not the default backend of `torch.compile`.",
+            "B": "Correct. TorchInductor is the default backend and generates Triton kernels for GPUs.",
+            "C": "Incorrect. ONNX Runtime is an external deployment engine, not the default `torch.compile` backend.",
+            "D": "Incorrect. TorchInductor automatically generates Triton code without requiring manual CUDA C++ files."
+        },
+        "competency": "Describe the role of TorchInductor and OpenAI Triton in torch.compile",
+        "source": "modules/module_7_basics_of_compiler/compiler.ipynb"
+    },
+    {
+        "id": "PTCA-P-009",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C1: Eager vs Graph Mode & torch.compile",
+        "difficulty": "Easy",
+        "multi_select": True,
+        "stem": "Which TWO of the following code snippets demonstrate valid, equivalent ways to apply `torch.compile` to a function `foo`? (Select 2)",
+        "code": "import torch\n\ndef foo(x, y):\n    a = torch.sin(x)\n    b = torch.cos(y)\n    return a + b",
+        "options": {
+            "A": "`opt_foo = torch.compile(foo)` followed by calling `opt_foo(t1, t2)`",
+            "B": "Decorating `def foo(x, y):` with `@torch.compile` and calling `foo(t1, t2)`",
+            "C": "Wrapping the call inside `with torch.compile(): foo(t1, t2)`",
+            "D": "Calling `t1.compile().foo(t2)` on the input tensor"
+        },
+        "correct": ["A", "B"],
+        "explanation": "As shown in `compiler_example.py`, `torch.compile` can be used either by passing a function or `nn.Module` directly as an argument (`opt_foo1 = torch.compile(foo)`) or as a Python decorator (`@torch.compile`) above the function definition.",
+        "option_explanations": {
+            "A": "Correct. Passing a callable or `nn.Module` to `torch.compile(foo)` returns a compiled callable.",
+            "B": "Correct. `@torch.compile` is a valid decorator syntax for compiling functions.",
+            "C": "Incorrect. `torch.compile` is not a context manager.",
+            "D": "Incorrect. `torch.Tensor` does not have a `.compile()` method."
+        },
+        "competency": "Apply torch.compile as both a function wrapper and a decorator",
+        "source": "modules/module_7_basics_of_compiler/compiler_example.py"
+    },
+    {
+        "id": "PTCA-P-010",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C1: Eager vs Graph Mode & torch.compile",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "Why does executing `opt_foo(x, y)` for the very first time take noticeably longer than running the uncompiled `foo(x, y)` in Eager Mode?",
+        "code": "import torch\n\n@torch.compile\ndef opt_foo(x, y):\n    return torch.sin(x) + torch.cos(y)\n\nx = torch.randn(4096, 4096, device='cuda')\ny = torch.randn(4096, 4096, device='cuda')\n\n# First call:\nout1 = opt_foo(x, y)\n# Second call:\nout2 = opt_foo(x, y)",
+        "options": {
+            "A": "`torch.compile` compiles lazily on the first invocation (warmup), incurring one-time overhead for TorchDynamo tracing, AOTAutograd graph capture, and TorchInductor kernel code generation/compilation.",
+            "B": "The first call runs on the CPU and copies the weights to the GPU only on the second call.",
+            "C": "`torch.compile` intentionally inserts a `time.sleep(5)` delay on the first call to calibrate the system clock.",
+            "D": "The first call computes the forward pass twice in FP64 to verify hardware correctness."
+        },
+        "correct": ["A"],
+        "explanation": "Calling `torch.compile(fn)` only wraps the callable; actual JIT compilation occurs lazily on the first call when concrete input tensor shapes, dtypes, and devices are observed. Subsequent calls with matching guards reuse the cached compiled kernels and run much faster.",
+        "option_explanations": {
+            "A": "Correct. Just-in-time tracing, graph optimization, and Triton/C++ kernel compilation occur during the first (warmup) execution.",
+            "B": "Incorrect. Operations execute on the device where the input tensors reside (`cuda`) on both calls.",
+            "C": "Incorrect. There is no artificial sleep delay; the latency is genuine compilation work.",
+            "D": "Incorrect. `torch.compile` does not run FP64 verification passes by default."
+        },
+        "competency": "Explain JIT compilation warmup overhead on the first invocation of a compiled model",
+        "source": "modules/module_7_basics_of_compiler/compiler.ipynb & LFD2003 Ch. 2"
+    },
+    {
+        "id": "PTCA-P-011",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C1: Eager vs Graph Mode & torch.compile",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "How does TorchInductor's operator fusion (kernel fusion) improve GPU performance for chains of pointwise operations like `a = torch.sin(x); b = torch.cos(y); return a + b`?",
+        "code": "@torch.compile\ndef trig_sum(x, y):\n    a = torch.sin(x)\n    b = torch.cos(y)\n    return a + b",
+        "options": {
+            "A": "It fuses `sin`, `cos`, and `+` into a single GPU kernel so intermediate tensors `a` and `b` stay in fast on-chip SRAM/registers instead of being written to and read back from global GPU HBM memory.",
+            "B": "It approximates `sin` and `cos` with constant zeros to skip arithmetic entirely.",
+            "C": "It moves pointwise operations from the GPU to the CPU to save GPU memory.",
+            "D": "It increases the number of separate CUDA kernel launches from 3 to 9."
+        },
+        "correct": ["A"],
+        "explanation": "In Eager Mode, `torch.sin(x)`, `torch.cos(y)`, and `a + b` launch three separate GPU kernels, materializing intermediate tensors `a` and `b` in global GPU memory (HBM). TorchInductor fuses these pointwise ops into a single Triton kernel, eliminating redundant global memory reads/writes and reducing kernel launch overhead.",
+        "option_explanations": {
+            "A": "Correct. Kernel fusion avoids round-trips to global GPU memory for intermediate results and launches a single kernel.",
+            "B": "Incorrect. Kernel fusion preserves mathematical semantics.",
+            "C": "Incorrect. Operations remain on the GPU.",
+            "D": "Incorrect. Fusion reduces the number of kernel launches from 3 to 1."
+        },
+        "competency": "Explain how kernel fusion reduces memory bandwidth and kernel launch overhead",
+        "source": "modules/module_7_basics_of_compiler/compiler.ipynb & LFD2003 Ch. 2"
+    },
+    {
+        "id": "PTCA-P-012",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C1: Eager vs Graph Mode & torch.compile",
+        "difficulty": "Hard",
+        "multi_select": False,
+        "stem": "In the function below, what happens when `fn(x, 2)` is called first, and then `fn(x, -3)` is called immediately afterward?",
+        "code": "import torch\n\n@torch.compile\ndef fn(x, n):\n    y = x ** 2\n    if n >= 0:\n        return (n + 1) * y\n    else:\n        return y / n\n\nx = torch.randn(200)\nout1 = fn(x, 2)\nout2 = fn(x, -3)",
+        "options": {
+            "A": "The second call `fn(x, -3)` reuses the exact graph compiled for `n=2` and returns `3 * (x ** 2)`.",
+            "B": "TorchDynamo's guard on `n` fails when `n=-3`, triggering a recompilation to trace and compile the `else` branch (`y / -3`).",
+            "C": "A `RuntimeError` is raised because `torch.compile` functions can only ever be called with a single integer value.",
+            "D": "The tensor `x` is automatically zeroed out."
+        },
+        "correct": ["B"],
+        "explanation": "When `fn(x, 2)` is traced, TorchDynamo specializes on the integer `n` (or its branch condition) and installs a guard. When `fn(x, -3)` is called, the guard fails because `n` changed and takes the `else` branch, so TorchDynamo re-traces and compiles a new graph for the new execution path.",
+        "option_explanations": {
+            "A": "Incorrect. TorchDynamo installs guards on inputs that affect control flow or constants; it will not silently execute the wrong branch.",
+            "B": "Correct. Guard failure on `n` triggers recompilation of the newly taken branch.",
+            "C": "Incorrect. Recompilation is automatic (up to the cache size limit) unless disabled.",
+            "D": "Incorrect. `x` is not modified."
+        },
+        "competency": "Analyze guard failures and recompilations in TorchDynamo",
+        "source": "modules/module_7_basics_of_compiler/torch_dynamo_example.py & LFD2003 Ch. 2"
+    },
+    {
+        "id": "PTCA-P-013",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C1: Eager vs Graph Mode & torch.compile",
+        "difficulty": "Hard",
+        "multi_select": False,
+        "stem": "What happens by default when TorchDynamo encounters data-dependent control flow on a tensor's runtime values, such as `if x.sum() > 0:`?",
+        "code": "import torch\n\n@torch.compile\ndef data_dependent_fn(x):\n    y = torch.relu(x)\n    if y.sum() > 0:\n        return y * 2\n    else:\n        return y + 1",
+        "options": {
+            "A": "TorchDynamo inserts a graph break: it compiles the subgraph before the `if` (`y = torch.relu(x)` and `y.sum() > 0`), falls back to Python eager execution to evaluate the condition, and then compiles the taken branch as a separate subgraph.",
+            "B": "Python segfaults immediately because tensors cannot be summed inside `@torch.compile`.",
+            "C": "TorchDynamo executes both branches simultaneously and averages their outputs.",
+            "D": "TorchDynamo deletes the `if` statement and always executes `y * 2` regardless of `y.sum()`."
+        },
+        "correct": ["A"],
+        "explanation": "Because an FX graph represents a linear sequence of tensor operations without dynamic Python branching, a condition that depends on runtime tensor data (`y.sum() > 0`) causes a **graph break**. TorchDynamo compiles the operations prior to the branch, returns to the Python interpreter to evaluate the boolean condition eagerly, and then resumes tracing/compiling the selected branch.",
+        "option_explanations": {
+            "A": "Correct. Data-dependent branching causes a graph break into separate compiled subgraphs around the Python eager evaluation of the condition.",
+            "B": "Incorrect. TorchDynamo gracefully falls back to Python via graph breaks rather than crashing.",
+            "C": "Incorrect. Evaluating both branches and averaging would produce mathematically wrong results.",
+            "D": "Incorrect. Unlike a static Python int argument that can be guarded before graph execution, a runtime tensor sum depends on intermediate computation and triggers a graph break."
+        },
+        "competency": "Explain graph breaks caused by data-dependent control flow in torch.compile",
+        "source": "modules/module_7_basics_of_compiler/compiler.ipynb & LFD2003 Ch. 2"
+    },
+    {
+        "id": "PTCA-P-014",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C1: Eager vs Graph Mode & torch.compile",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "Which parameter in `torch.compile(model, ...)` raises an error if TorchDynamo encounters any graph break (ensuring the entire function or model is captured as a single unified FX graph)?",
+        "code": "opt_model = torch.compile(model, fullgraph=True)",
+        "options": {
+            "A": "`fullgraph=True`",
+            "B": "`disable=True`",
+            "C": "`dynamic=False`",
+            "D": "`mode='default'`"
+        },
+        "correct": ["A"],
+        "explanation": "Passing `fullgraph=True` to `torch.compile` forces TorchDynamo to capture the entire callable into a single graph without falling back to Python via graph breaks. If an untraceable operation or data-dependent control flow is encountered, it raises an exception.",
+        "option_explanations": {
+            "A": "Correct. `fullgraph=True` disallows graph breaks and raises an error if the entire function cannot be captured into one FX graph.",
+            "B": "Incorrect. `disable=True` turns `torch.compile` into a no-op.",
+            "C": "Incorrect. `dynamic` controls symbolic shape tracing, not whether graph breaks are forbidden.",
+            "D": "Incorrect. `mode='default'` permits graph breaks."
+        },
+        "competency": "Configure torch.compile with fullgraph=True to detect graph breaks",
+        "source": "modules/module_7_basics_of_compiler/compiler.ipynb & torch.compiler docs"
+    },
+    {
+        "id": "PTCA-P-015",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C1: Eager vs Graph Mode & torch.compile",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "Why is it advantageous that the core components of `torch.compile` (TorchDynamo, AOTAutograd, TorchInductor) are written in Python rather than C++?",
+        "code": "",
+        "options": {
+            "A": "It makes the compiler components easier to understand, debug, extend, and contribute to compared to a monolithic C++ compiler.",
+            "B": "Python code automatically runs 100x faster on GPUs without needing a backend compiler.",
+            "C": "It prevents users from using `torch.nn.Module` classes.",
+            "D": "It eliminates the need for OpenAI Triton or C++ compilers on the system."
+        },
+        "correct": ["A"],
+        "explanation": "As highlighted in `compiler.ipynb`, the `torch.compile` components are written in Python, which makes the compiler stack much easier for developers and researchers to understand, customize, and contribute to than C++.",
+        "option_explanations": {
+            "A": "Correct. Writing the compiler stack in Python lowers the barrier to understanding and contributing to PyTorch's compiler ecosystem.",
+            "B": "Incorrect. Speedups come from the generated Triton/C++ kernels, not from Python interpreter speed.",
+            "C": "Incorrect. `torch.compile` fully supports `torch.nn.Module`.",
+            "D": "Incorrect. TorchInductor still generates Triton/C++ code under the hood."
+        },
+        "competency": "Understand the design philosophy of torch.compile's Python-based compiler stack",
+        "source": "modules/module_7_basics_of_compiler/compiler.ipynb"
+    },
+    {
+        "id": "PTCA-P-016",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C1: Eager vs Graph Mode & torch.compile",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "Which `mode` argument to `torch.compile(model, mode=...)` is specifically designed to minimize Python and CUDA launch overhead for small batches using CUDA Graphs, at the cost of a small amount of extra workspace memory?",
+        "code": "opt_model = torch.compile(model, mode=\"reduce-overhead\")",
+        "options": {
+            "A": "`mode=\"reduce-overhead\"`",
+            "B": "`mode=\"max-autotune-no-cudagraphs\"`",
+            "C": "`mode=\"eager\"`",
+            "D": "`mode=\"debug-only\"`"
+        },
+        "correct": ["A"],
+        "explanation": "`mode='reduce-overhead'` utilizes CUDA Graphs within TorchInductor to drastically cut framework and kernel launch overhead, which is especially beneficial for small models or small batch sizes.",
+        "option_explanations": {
+            "A": "Correct. `reduce-overhead` uses CUDA Graphs to minimize launch overhead at the cost of some extra memory.",
+            "B": "Incorrect. `max-autotune-no-cudagraphs` explicitly avoids CUDA graphs while benchmarking kernel configurations.",
+            "C": "Incorrect. `eager` is a backend name (`backend='eager'`), not a `mode`.",
+            "D": "Incorrect. `debug-only` is not a valid `torch.compile` mode."
+        },
+        "competency": "Select appropriate torch.compile optimization modes",
+        "source": "modules/module_7_basics_of_compiler/compiler.ipynb & torch.compiler docs"
+    },
+    {
+        "id": "PTCA-P-017",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C1: Eager vs Graph Mode & torch.compile",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "When training a model where the input sequence length or batch size varies across iterations, which `torch.compile` argument helps avoid repeated recompilations for every new tensor shape?",
+        "code": "opt_model = torch.compile(model, dynamic=True)",
+        "options": {
+            "A": "`dynamic=True`",
+            "B": "`fullgraph=True`",
+            "C": "`disable=True`",
+            "D": "`backend=\"cudagraphs\"`"
+        },
+        "correct": ["A"],
+        "explanation": "Setting `dynamic=True` instructs TorchDynamo and TorchInductor to trace symbolic shapes up front rather than specializing on exact static tensor dimensions, preventing costly recompilations when batch sizes or sequence lengths vary.",
+        "option_explanations": {
+            "A": "Correct. `dynamic=True` enables symbolic shape compilation to handle varying input dimensions without recompiling each shape.",
+            "B": "Incorrect. `fullgraph=True` enforces zero graph breaks, not dynamic shape generalization.",
+            "C": "Incorrect. `disable=True` disables compilation altogether.",
+            "D": "Incorrect. CUDA graphs require static tensor shapes and memory addresses."
+        },
+        "competency": "Handle varying input tensor shapes in torch.compile using dynamic=True",
+        "source": "modules/module_7_basics_of_compiler/compiler.ipynb & torch.compiler docs"
+    },
+    {
+        "id": "PTCA-P-018",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C1: Eager vs Graph Mode & torch.compile",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "What is the effect of placing `print(\"Debug:\", x)` inside a function decorated with `@torch.compile`?",
+        "code": "@torch.compile\ndef step(x):\n    y = x * 2\n    print(\"Debug:\", y)\n    return y + 1",
+        "options": {
+            "A": "It causes a graph break at `print(...)`: TorchDynamo compiles `y = x * 2` into one graph, executes `print` in Python eager mode, and compiles `y + 1` into a second graph.",
+            "B": "The `print` statement is compiled into a native CUDA kernel that writes directly to the monitor via HDMI.",
+            "C": "It silently deletes `y + 1` and returns `None`.",
+            "D": "It corrupts the GPU driver and requires a system reboot."
+        },
+        "correct": ["A"],
+        "explanation": "Arbitrary Python side-effects such as `print()` or `pdb.set_trace()` cannot be represented as tensor operations inside an FX graph. TorchDynamo handles this by inserting a graph break, executing the `print` call in standard Python, and then resuming graph capture afterward.",
+        "option_explanations": {
+            "A": "Correct. Side-effecting Python functions like `print` cause a graph break into pre-print and post-print subgraphs.",
+            "B": "Incorrect. Python `print` is executed by the host Python interpreter during the graph break.",
+            "C": "Incorrect. Execution resumes normally after the graph break.",
+            "D": "Incorrect. Graph breaks are safe and preserve program correctness."
+        },
+        "competency": "Understand how Python side-effects like print cause graph breaks in torch.compile",
+        "source": "modules/module_7_basics_of_compiler/compiler.ipynb & LFD2003 Ch. 2"
+    },
+    {
+        "id": "PTCA-P-019",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C1: Eager vs Graph Mode & torch.compile",
+        "difficulty": "Easy",
+        "multi_select": False,
+        "stem": "In `torch.compile`, what is an **FX Graph**?",
+        "code": "# Output of TORCH_LOGS=graph_code:\ndef forward(l_x_ : torch.Tensor):\n    y = l_x_ ** 2\n    mul = 3 * y\n    return (mul,)",
+        "options": {
+            "A": "A container (Intermediate Representation) that stores a linear sequence of captured PyTorch function/operator calls, inputs, and outputs without Python branching.",
+            "B": "A 3D visualization widget rendered only in TensorBoard.",
+            "C": "A serialized checkpoint format that replaces `.pt` state_dict files.",
+            "D": "A hardware-specific assembly file that can only run on Intel XPU devices."
+        },
+        "correct": ["A"],
+        "explanation": "As explained in `compiler.ipynb`, an FX graph is an Intermediate Representation (IR) container that stores a linear sequence of function calls (operations) traced from a PyTorch program for given inputs.",
+        "option_explanations": {
+            "A": "Correct. An FX graph is a Python-level IR container storing the linear sequence of captured tensor operations.",
+            "B": "Incorrect. An FX graph is a compiler data structure, not a TensorBoard visualization.",
+            "C": "Incorrect. FX graphs represent computation, not model weight checkpoints.",
+            "D": "Incorrect. FX graphs are device-independent intermediate representations passed to backends like TorchInductor."
+        },
+        "competency": "Define the role of FX graphs in TorchDynamo",
+        "source": "modules/module_7_basics_of_compiler/compiler.ipynb"
+    },
+    {
+        "id": "PTCA-P-020",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C1: Eager vs Graph Mode & torch.compile",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "When comparing `mode=\"default\"`, `mode=\"reduce-overhead\"`, and `mode=\"max-autotune\"` in `torch.compile`, what is the primary characteristic of `mode=\"max-autotune\"`?",
+        "code": "opt_model = torch.compile(model, mode=\"max-autotune\")",
+        "options": {
+            "A": "It spends the longest time during compilation benchmarking multiple Triton kernel configurations and matrix multiplication implementations (ATen vs Triton) to achieve the fastest runtime execution.",
+            "B": "It skips compilation completely so the first iteration starts instantaneously.",
+            "C": "It automatically tunes the model's learning rate and weight decay hyperparameters.",
+            "D": "It restricts the model to single-threaded CPU execution."
+        },
+        "correct": ["A"],
+        "explanation": "`mode='max-autotune'` leverages CUDA Graphs and profiles multiple Triton templates and cuBLAS/ATen kernels during compilation to select the fastest kernel for each operation on the target GPU. It has the highest compilation latency but delivers maximum steady-state throughput.",
+        "option_explanations": {
+            "A": "Correct. `max-autotune` trades longer compile time for peak execution speed by benchmarking candidate kernels.",
+            "B": "Incorrect. `max-autotune` has the longest compilation warmup time.",
+            "C": "Incorrect. `max-autotune` tunes low-level hardware kernels, not ML training hyperparameters.",
+            "D": "Incorrect. `max-autotune` targets peak accelerator/CPU performance, not single-threaded CPU execution."
+        },
+        "competency": "Differentiate torch.compile modes (default, reduce-overhead, max-autotune)",
+        "source": "modules/module_7_basics_of_compiler/compiler.ipynb & torch.compiler docs"
+    },
+    {
+        "id": "PTCA-P-021",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C1: Eager vs Graph Mode & torch.compile",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "In which of the following scenarios would applying `torch.compile` yield minimal or even negative net speedup?",
+        "code": "model = MyLargeModel().cuda()\ncompiled_model = torch.compile(model)\n# Run inference on a single batch and exit script:\nout = compiled_model(single_batch)",
+        "options": {
+            "A": "Running inference on only a single batch (one-shot execution), where the one-time JIT compilation warmup cost exceeds the runtime savings.",
+            "B": "Running a long training job of 50,000 iterations with a fixed batch size on a modern GPU.",
+            "C": "Running repeated inference on a transformer model with many fusible elementwise and normalization layers.",
+            "D": "Training a model that uses both forward and backward passes over hundreds of epochs."
+        },
+        "correct": ["A"],
+        "explanation": "Because `torch.compile` incurs a substantial one-time compilation cost during the first execution (warmup), running a compiled model only once or for very few iterations will not amortize the compilation time.",
+        "option_explanations": {
+            "A": "Correct. One-shot execution pays the full JIT compilation cost without running enough subsequent iterations to recoup the overhead.",
+            "B": "Incorrect. Long training loops with fixed shapes amortize the warmup cost and benefit significantly from `torch.compile`.",
+            "C": "Incorrect. Repeated inference on models with fusible ops is an ideal use case for `torch.compile`.",
+            "D": "Incorrect. Multi-epoch training benefits from both TorchDynamo and AOTAutograd optimizations."
+        },
+        "competency": "Identify workloads where torch.compile overhead outweighs runtime speedup",
+        "source": "modules/module_7_basics_of_compiler/compiler.ipynb & LFD2003 Ch. 2"
+    },
+    {
+        "id": "PTCA-P-022",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C1: Eager vs Graph Mode & torch.compile",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "When compiling an `nn.Module` for training, where should `torch.compile(model)` be called in your training script?",
+        "code": "model = MyNet().to(device)\n# Where should torch.compile be placed?",
+        "options": {
+            "A": "Once, after moving the model to the target `device` and before starting the training loop.",
+            "B": "Inside the inner batch loop on every single training step right before `model(inputs)`.",
+            "C": "Only after training is completely finished and the script is exiting.",
+            "D": "On the loss scalar tensor (`torch.compile(loss)`) rather than on the model or step function."
+        },
+        "correct": ["A"],
+        "explanation": "`model = torch.compile(model)` should be called once after moving the model to its target device and before entering the training/inference loop. Calling `torch.compile` inside the training loop re-wraps the model every step and can trigger redundant compilation overhead.",
+        "option_explanations": {
+            "A": "Correct. Compile the model once on its target device prior to the training loop.",
+            "B": "Incorrect. Calling `torch.compile` inside every iteration defeats caching and adds massive overhead.",
+            "C": "Incorrect. Compiling after training provides zero training speedup.",
+            "D": "Incorrect. `torch.compile` wraps a callable (`nn.Module` or function), not a scalar output tensor."
+        },
+        "competency": "Place torch.compile correctly in a PyTorch training pipeline",
+        "source": "modules/module_7_basics_of_compiler/compiler.ipynb & LFD2003 Ch. 2"
+    },
+    {
+        "id": "PTCA-P-023",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C1: Eager vs Graph Mode & torch.compile",
+        "difficulty": "Hard",
+        "multi_select": False,
+        "stem": "Why does calling `.item()` or `.numpy()` on an intermediate tensor inside the `forward()` method of a compiled model degrade `torch.compile` performance?",
+        "code": "class BadModule(torch.nn.Module):\n    def forward(self, x):\n        y = torch.sin(x)\n        val = y[0].item()  # <--- here\n        return y + val",
+        "options": {
+            "A": "It forces a CPU-GPU synchronization and causes a graph break because `.item()` materializes a Python scalar on the host CPU mid-graph.",
+            "B": "It converts the entire model's parameters to `torch.int8` permanently.",
+            "C": "It disables autograd across the entire Python process for all future models.",
+            "D": "It causes `torch.sin(x)` to return complex numbers."
+        },
+        "correct": ["A"],
+        "explanation": "Calling `.item()` or `.numpy()` on a GPU tensor requires copying data back to the host CPU (forcing a device synchronization) and produces a Python/NumPy object rather than a PyTorch tensor, which triggers a graph break in TorchDynamo.",
+        "option_explanations": {
+            "A": "Correct. Extracting a Python scalar via `.item()` mid-forward forces host-device synchronization and splits the compiled FX graph.",
+            "B": "Incorrect. `.item()` does not quantize model parameters.",
+            "C": "Incorrect. Global autograd remains enabled, though the scalar `val` itself is detached from the autograd graph.",
+            "D": "Incorrect. `torch.sin` on real floats returns real floats."
+        },
+        "competency": "Diagnose graph breaks and sync stalls caused by .item() or .numpy() in compiled code",
+        "source": "modules/module_7_basics_of_compiler/compiler.ipynb & LFD2003 Ch. 2"
+    },
+    {
+        "id": "PTCA-P-024",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C1: Eager vs Graph Mode & torch.compile",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "If you want to prevent TorchDynamo from tracing a specific helper function (such as a custom logging routine) and instead execute that function in Eager Mode without erroring, which decorator should you apply to the helper function?",
+        "code": "import torch\n\n@torch.compiler.disable\ndef log_metrics(tensor_x):\n    print(\"Max value:\", tensor_x.max().item())",
+        "options": {
+            "A": "`@torch.compiler.disable`",
+            "B": "`@torch.no_grad()`",
+            "C": "`@torch.amp.autocast('cuda')`",
+            "D": "`@torch.jit.script`"
+        },
+        "correct": ["A"],
+        "explanation": "`@torch.compiler.disable` tells TorchDynamo to skip tracing the decorated function and any functions it calls, cleanly breaking the graph and running the function in standard eager mode.",
+        "option_explanations": {
+            "A": "Correct. `@torch.compiler.disable` excludes a function from compilation and runs it eagerly.",
+            "B": "Incorrect. `@torch.no_grad()` disables gradient tracking, not compilation.",
+            "C": "Incorrect. `@torch.amp.autocast` enables mixed precision casting, not eager fallback.",
+            "D": "Incorrect. `@torch.jit.script` invokes the legacy TorchScript compiler."
+        },
+        "competency": "Use @torch.compiler.disable to exclude non-traceable functions from compilation",
+        "source": "modules/module_7_basics_of_compiler/compiler.ipynb & torch.compiler docs"
+    },
+    {
+        "id": "PTCA-P-025",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C1: Eager vs Graph Mode & torch.compile",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "What target code does `TorchInductor` generate when compiling a PyTorch model for execution on a **CPU** (where OpenAI Triton GPU kernels are not used)?",
+        "code": "cpu_model = MyModel().to('cpu')\nopt_cpu_model = torch.compile(cpu_model)",
+        "options": {
+            "A": "Vectorized C++ / OpenMP code.",
+            "B": "NVIDIA PTX assembly only, causing CPU execution to fail.",
+            "C": "JavaScript WebGL shaders.",
+            "D": "Unmodified interpreted Python loops."
+        },
+        "correct": ["A"],
+        "explanation": "TorchInductor supports both GPUs and CPUs. While it generates OpenAI Triton kernels for GPUs, on CPUs it generates optimized C++ code with OpenMP parallelism and SIMD vectorization.",
+        "option_explanations": {
+            "A": "Correct. For CPU targets, TorchInductor generates optimized C++/OpenMP kernels.",
+            "B": "Incorrect. TorchInductor supports CPU targets natively via C++/OpenMP.",
+            "C": "Incorrect. TorchInductor does not generate WebGL shaders.",
+            "D": "Incorrect. TorchInductor compiles fused loops into native C++ machine code."
+        },
+        "competency": "Identify TorchInductor's codegen target for CPU vs GPU",
+        "source": "modules/module_7_basics_of_compiler/compiler.ipynb & torch.compiler docs"
+    },
+    {
+        "id": "PTCA-P-026",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C1: Eager vs Graph Mode & torch.compile",
+        "difficulty": "Hard",
+        "multi_select": False,
+        "stem": "When saving a `state_dict()` from a model wrapped with `opt_model = torch.compile(model)`, how are the parameter keys in `opt_model.state_dict()` prefixed compared to the original `model.state_dict()`?",
+        "code": "orig_model = nn.Linear(10, 2)\nopt_model = torch.compile(orig_model)\nprint(list(opt_model.state_dict().keys()))",
+        "options": {
+            "A": "They are prefixed with `_orig_mod.` (e.g., `['_orig_mod.weight', '_orig_mod.bias']`), whereas `opt_model._orig_mod.state_dict()` preserves the original unprefixed keys.",
+            "B": "All parameter keys are hashed into random UUID strings.",
+            "C": "`opt_model.state_dict()` returns an empty dictionary because compiled models discard their weights.",
+            "D": "They are suffixed with `.triton_kernel`."
+        },
+        "correct": ["A"],
+        "explanation": "`torch.compile(model)` wraps the original `nn.Module` inside an `OptimizedModule` attribute named `_orig_mod`. Consequently, `opt_model.state_dict()` prefixes parameter names with `_orig_mod.`. Accessing `opt_model._orig_mod.state_dict()` (or saving from the original `model` reference) yields clean keys.",
+        "option_explanations": {
+            "A": "Correct. `OptimizedModule` stores the underlying module in `_orig_mod`, adding `_orig_mod.` to `state_dict` keys.",
+            "B": "Incorrect. Parameter keys are not hashed into UUIDs.",
+            "C": "Incorrect. Compiled models retain full access to parameters and `state_dict()`.",
+            "D": "Incorrect. `.triton_kernel` is not added to parameter names."
+        },
+        "competency": "Handle state_dict keys when saving and loading compiled nn.Modules",
+        "source": "modules/module_7_basics_of_compiler/compiler.ipynb & torch.compiler docs"
+    },
+    {
+        "id": "PTCA-P-027",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C1: Eager vs Graph Mode & torch.compile",
+        "difficulty": "Easy",
+        "multi_select": False,
+        "stem": "Does `torch.compile` support accelerating only model inference, or does it also accelerate model training?",
+        "code": "",
+        "options": {
+            "A": "It accelerates both inference and training (by using TorchDynamo for the forward pass and AOTAutograd to capture the backward pass for TorchInductor).",
+            "B": "It only supports inference; calling `.backward()` on a compiled model's output raises an error.",
+            "C": "It only supports training; running under `torch.no_grad()` disables `torch.compile`.",
+            "D": "It only supports CPU data preprocessing in `Dataset.__getitem__`."
+        },
+        "correct": ["A"],
+        "explanation": "As stated in `compiler.ipynb`, `torch.compile` optimizes performance during both inference and training. Training acceleration is achieved through `AOTAutograd`, which captures the backward graph ahead of time so TorchInductor can optimize both passes.",
+        "option_explanations": {
+            "A": "Correct. `torch.compile` accelerates both inference and training.",
+            "B": "Incorrect. `.backward()` is fully supported and accelerated via AOTAutograd.",
+            "C": "Incorrect. Inference under `torch.no_grad()` or `torch.inference_mode()` is also accelerated by `torch.compile`.",
+            "D": "Incorrect. `torch.compile` is designed for tensor/model computations on GPU and CPU."
+        },
+        "competency": "Understand that torch.compile accelerates both inference and training",
+        "source": "modules/module_7_basics_of_compiler/compiler.ipynb"
+    },
+    {
+        "id": "PTCA-P-028",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C1: Eager vs Graph Mode & torch.compile",
+        "difficulty": "Hard",
+        "multi_select": False,
+        "stem": "Consider the following loop where a Python scalar `i` is passed into a compiled function on every step. Why does this pattern hurt performance, and how should it be fixed?",
+        "code": "@torch.compile\ndef scale_tensor(x, factor):\n    return torch.sin(x) * factor\n\nx = torch.randn(1024, device='cuda')\nfor i in range(1, 50):\n    out = scale_tensor(x, i)",
+        "options": {
+            "A": "Passing a changing Python int `i` can cause TorchDynamo to specialize on `factor` or recompile until hitting the recompile limit; passing `factor` as a 0-D tensor or using `dynamic=True` avoids repeated specialization.",
+            "B": "`torch.sin` cannot multiply by integers in PyTorch.",
+            "C": "`range(1, 50)` only executes once when `@torch.compile` is present in the file.",
+            "D": "It causes the GPU memory to be freed after every call."
+        },
+        "correct": ["A"],
+        "explanation": "TorchDynamo often treats Python integer arguments as static constants on the first call and guards on their exact value (or switches to symbolic ints after recompilation). Wrapping changing scalar arguments as tensors or enabling `dynamic=True` avoids unnecessary guard failures and recompilations.",
+        "option_explanations": {
+            "A": "Correct. Changing Python scalars across calls can trigger guard failures and recompilations.",
+            "B": "Incorrect. Multiplying a float tensor by an integer is valid in PyTorch.",
+            "C": "Incorrect. The outer `for` loop is outside `@torch.compile` and runs all 49 iterations.",
+            "D": "Incorrect. It does not free GPU memory; rather, it wastes time recompiling."
+        },
+        "competency": "Avoid unnecessary recompilations caused by changing Python scalar arguments",
+        "source": "modules/module_7_basics_of_compiler/torch_dynamo_example.py & torch.compiler docs"
+    },
+    {
+        "id": "PTCA-P-029",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C1: Eager vs Graph Mode & torch.compile",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "How does `torch.compile` (TorchDynamo) differ fundamentally from legacy `torch.jit.script` (TorchScript) when encountering unsupported Python features (such as a complex third-party Python library call)?",
+        "code": "@torch.compile\ndef forward(self, x):\n    x = self.layer1(x)\n     custom_python_logging(x.shape)\n    return self.layer2(x)",
+        "options": {
+            "A": "TorchDynamo gracefully inserts a graph break, runs the unsupported Python code in Eager Mode, and compiles the surrounding PyTorch subgraphs, whereas `torch.jit.script` fails to compile the entire function if any Python construct is unsupported.",
+            "B": "`torch.jit.script` supports 100% of Python C-extensions, whereas `torch.compile` only supports `nn.Sequential`.",
+            "C": "Both crash the Python interpreter with a segmentation fault.",
+            "D": "TorchDynamo automatically rewrites third-party C libraries into FORTRAN."
+        },
+        "correct": ["A"],
+        "explanation": "Unlike `torch.jit.script`, which requires the entire function to conform to a strict statically-typed subset of Python, TorchDynamo intercepts bytecode at runtime and can break the graph around arbitrary Python code, compiling the tensor-heavy regions before and after the break.",
+        "option_explanations": {
+            "A": "Correct. Partial graph capture via graph breaks makes `torch.compile` works out-of-the-box on arbitrary Python codebases.",
+            "B": "Incorrect. `torch.jit.script` only supports a restricted subset of Python, while `torch.compile` supports arbitrary Python via graph breaks.",
+            "C": "Incorrect. Neither crashes with a segfault; `torch.compile` falls back to eager mode for the unsupported line.",
+            "D": "Incorrect. TorchDynamo does not translate C libraries to FORTRAN."
+        },
+        "competency": "Contrast TorchDynamo's partial graph capture with legacy TorchScript",
+        "source": "modules/module_7_basics_of_compiler/compiler.ipynb & LFD2003 Ch. 2"
+    },
+    {
+        "id": "PTCA-P-030",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C1: Eager vs Graph Mode & torch.compile",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "Which logging setting prints detailed diagnostic reasons whenever `torch.compile` encounters a graph break or triggers a recompilation?",
+        "code": "# Inspect graph breaks and recompilations:\n# TORCH_LOGS=\"<SETTING>\" python train.py",
+        "options": {
+            "A": "`TORCH_LOGS=\"graph_breaks,recompiles\"`",
+            "B": "`TORCH_LOGS=\"none\"`",
+            "C": "`NCCL_DEBUG=\"INFO\"`",
+            "D": "`OMP_NUM_THREADS=1`"
+        },
+        "correct": ["A"],
+        "explanation": "`TORCH_LOGS` accepts comma-separated components such as `graph_code`, `graph_breaks`, `recompiles`, and `guards` to diagnose why TorchDynamo broke a graph or recompiled a function.",
+        "option_explanations": {
+            "A": "Correct. `TORCH_LOGS=\"graph_breaks,recompiles\"` logs the exact file and line number causing graph breaks and guard failures.",
+            "B": "Incorrect. `none` does not enable diagnostic logging.",
+            "C": "Incorrect. `NCCL_DEBUG` is for multi-GPU collective communication logging.",
+            "D": "Incorrect. `OMP_NUM_THREADS` controls CPU OpenMP thread count."
+        },
+        "competency": "Diagnose graph breaks and recompilations using TORCH_LOGS",
+        "source": "modules/module_7_basics_of_compiler/compiler.ipynb & torch.compiler docs"
+    },
+    {
+        "id": "PTCA-P-031",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C1: Eager vs Graph Mode & torch.compile",
+        "difficulty": "Easy",
+        "multi_select": False,
+        "stem": "In `compiler.ipynb`, how is OpenAI Triton described in relation to PyTorch and GPU vendors?",
+        "code": "",
+        "options": {
+            "A": "OpenAI Triton is a compiler and programming language that supports GPUs from major vendors and is provided as a dependency in PyTorch binary builds for TorchInductor.",
+            "B": "OpenAI Triton is a cloud-only REST API that requires an active internet connection and API key during `torch.compile`.",
+            "C": "OpenAI Triton is a CPU-only BLAS library that replaces Intel MKL.",
+            "D": "OpenAI Triton is a dataset loader for image classification."
+        },
+        "correct": ["A"],
+        "explanation": "According to `compiler.ipynb`, TorchInductor translates captured PyTorch graphs into OpenAI's Triton, which is both a compiler and compiler language supporting GPUs from major vendors and is bundled as a dependency in PyTorch binary builds.",
+        "option_explanations": {
+            "A": "Correct. Triton is a GPU compiler and language used by TorchInductor and included with PyTorch binary builds.",
+            "B": "Incorrect. Triton runs locally on the machine as a compiler backend without any cloud API calls.",
+            "C": "Incorrect. Triton targets GPUs; TorchInductor uses C++/OpenMP for CPUs.",
+            "D": "Incorrect. Triton is a kernel compiler, not a dataset utility."
+        },
+        "competency": "Describe OpenAI Triton's integration with TorchInductor in PyTorch",
+        "source": "modules/module_7_basics_of_compiler/compiler.ipynb"
+    },
+    {
+        "id": "PTCA-P-032",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C1: Eager vs Graph Mode & torch.compile",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "Can `torch.compile` be combined with Automatic Mixed Precision (`torch.amp.autocast`) during model training or inference?",
+        "code": "opt_model = torch.compile(model)\nwith torch.amp.autocast(device_type=\"cuda\", dtype=torch.float16):\n    out = opt_model(inputs)",
+        "options": {
+            "A": "Yes; TorchDynamo traces the autocast dtype-promotion rules directly into the FX graph, and TorchInductor generates fused mixed-precision Triton kernels.",
+            "B": "No; `torch.compile` only supports `torch.float64` tensors and raises a `TypeError` inside `autocast`.",
+            "C": "No; entering `torch.amp.autocast` automatically uncompiles the model and deletes all cached kernels.",
+            "D": "Yes, but only on CPU and never on CUDA GPUs."
+        },
+        "correct": ["A"],
+        "explanation": "`torch.compile` and `torch.amp.autocast` compose naturally and are commonly used together in production. TorchDynamo captures the autocast behavior in the FX graph, allowing TorchInductor to fuse mixed-precision operations into fast Triton kernels.",
+        "option_explanations": {
+            "A": "Correct. `torch.compile` and `torch.amp.autocast` integrate seamlessly to combine kernel fusion with lower-precision Tensor Core execution.",
+            "B": "Incorrect. `torch.compile` supports FP32, FP16, BF16, and other standard dtypes.",
+            "C": "Incorrect. `autocast` does not disable `torch.compile`.",
+            "D": "Incorrect. Combining `torch.compile` and `autocast` on CUDA GPUs is a standard high-performance practice."
+        },
+        "competency": "Combine torch.compile with Automatic Mixed Precision (AMP)",
+        "source": "modules/module_7_basics_of_compiler/compiler.ipynb & modules/module_9_amp_profiler_benchmarking_etc/1_amp_basics.ipynb"
+    }
+]
+
+print(f"Loaded {len(questions_c1)} C1 questions.")
+
+questions_c2 = [
+    {
+        "id": "PTCA-P-033",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C2: Precision & Automatic Mixed Precision (AMP)",
+        "difficulty": "Easy",
+        "multi_select": True,
+        "stem": "What are the TWO primary benefits of Automatic Mixed Precision (AMP) during deep learning training and inference? (Select 2)",
+        "code": "",
+        "options": {
+            "A": "Performance speedup by utilizing faster GPU hardware units (such as Tensor Cores) for half-precision (16-bit) compute-intensive operations like matrix multiplications and convolutions.",
+            "B": "Memory efficiency by reducing the memory footprint of intermediate activations in 16-bit precision, allowing larger models or larger batch sizes to fit into GPU memory.",
+            "C": "Guaranteed zero numerical rounding error by promoting all operations to 128-bit quadruple precision.",
+            "D": "Eliminating the need for backward passes during supervised neural network training."
+        },
+        "correct": ["A", "B"],
+        "explanation": "As outlined in `1_amp_basics.ipynb`, AMP provides two major benefits: (1) Performance speedup on GPUs with specialized half-precision compute units (Tensor Cores) for linear layers, convolutions, and matmuls, and (2) Memory efficiency by halving the memory used by 16-bit activations, enabling larger models or batch sizes.",
+        "option_explanations": {
+            "A": "Correct. Half-precision (`float16`/`bfloat16`) compute operations execute significantly faster on modern GPU Tensor Cores.",
+            "B": "Correct. Storing 16-bit activations instead of 32-bit activations cuts activation memory usage by roughly 50%.",
+            "C": "Incorrect. AMP uses 32-bit (`float32`) and 16-bit (`float16`/`bfloat16`) types, not 128-bit precision.",
+            "D": "Incorrect. Training still requires the backward pass."
+        },
+        "competency": "Explain the performance and memory benefits of Automatic Mixed Precision (AMP)",
+        "source": "modules/module_9_amp_profiler_benchmarking_etc/1_amp_basics.ipynb"
+    },
+    {
+        "id": "PTCA-P-034",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C2: Precision & Automatic Mixed Precision (AMP)",
+        "difficulty": "Easy",
+        "multi_select": True,
+        "stem": "Which TWO classes in the `torch.amp` module work together to enable Automatic Mixed Precision training in PyTorch? (Select 2)",
+        "code": "import torch",
+        "options": {
+            "A": "`torch.amp.autocast`",
+            "B": "`torch.amp.GradScaler`",
+            "C": "`torch.amp.QuantizerInt4`",
+            "D": "`torch.amp.DistributedSampler`"
+        },
+        "correct": ["A", "B"],
+        "explanation": "PyTorch's `torch.amp` module provides two core tools for mixed precision training: `torch.amp.autocast` (which automatically selects the appropriate precision for each forward pass operation) and `torch.amp.GradScaler` (which scales the loss to prevent gradient underflow when using `torch.float16`).",
+        "option_explanations": {
+            "A": "Correct. `torch.amp.autocast` automatically casts operations to FP16/BF16 or FP32 within its scope.",
+            "B": "Correct. `torch.amp.GradScaler` dynamically scales loss and gradients to prevent underflow in `float16`.",
+            "C": "Incorrect. `QuantizerInt4` does not exist in `torch.amp`.",
+            "D": "Incorrect. `DistributedSampler` belongs to `torch.utils.data.distributed`."
+        },
+        "competency": "Identify torch.amp.autocast and torch.amp.GradScaler as the core AMP components",
+        "source": "modules/module_9_amp_profiler_benchmarking_etc/1_amp_basics.ipynb"
+    },
+    {
+        "id": "PTCA-P-035",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C2: Precision & Automatic Mixed Precision (AMP)",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "What is the output of the following code snippet from `2_tensor_attributes.ipynb`, and why does it occur?",
+        "code": "import torch\n\nfloat32_tensor = torch.tensor(1e7, dtype=torch.float32)\nfloat16_tensor = torch.tensor(1e7, dtype=torch.float16)\nprint(\"Large float32:\", float32_tensor)\nprint(\"Large float16:\", float16_tensor)",
+        "options": {
+            "A": "`Large float32: tensor(10000000.)` and `Large float16: tensor(inf, dtype=torch.float16)`, because `1e7` exceeds the maximum representable value (~65,504) of IEEE 754 `float16` (5 exponent bits).",
+            "B": "Both print `tensor(10000000.)` because `float16` has the exact same dynamic range as `float32`.",
+            "C": "`Large float16: tensor(0., dtype=torch.float16)` because large numbers underflow to zero.",
+            "D": "Python raises a `ZeroDivisionError`."
+        },
+        "correct": ["A"],
+        "explanation": "IEEE 754 `torch.float16` uses 1 sign bit, 5 exponent bits, and 10 mantissa bits, giving it a maximum finite representable value of 65,504. Assigning `1e7` (10,000,000) overflows `float16` to `inf`, whereas `float32` (8 exponent bits, max ~3.4e38) represents `10000000.` without issue.",
+        "option_explanations": {
+            "A": "Correct. `1e7` overflows the narrow 5-bit exponent range of `torch.float16`, producing `inf`.",
+            "B": "Incorrect. `bfloat16` shares the dynamic range of `float32`, not `float16`.",
+            "C": "Incorrect. Exceeding the maximum representable magnitude causes overflow to `inf`, not underflow to `0`.",
+            "D": "Incorrect. No division by zero occurs."
+        },
+        "competency": "Compare the dynamic range and overflow behavior of float32 vs float16",
+        "source": "modules/module_2_tensors/2_tensor_attributes.ipynb"
+    },
+    {
+        "id": "PTCA-P-036",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C2: Precision & Automatic Mixed Precision (AMP)",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "How does `torch.bfloat16` compare to `torch.float16` and `torch.float32` in terms of bit layout and dynamic range?",
+        "code": "t_fp32 = torch.tensor(1e7, dtype=torch.float32)\nt_bf16 = torch.tensor(1e7, dtype=torch.bfloat16)\nt_fp16 = torch.tensor(1e7, dtype=torch.float16)",
+        "options": {
+            "A": "`bfloat16` is a 16-bit format with 8 exponent bits and 7 mantissa bits, giving it the same wide dynamic range as `float32` (avoiding `float16`'s frequent underflow/overflow) at the cost of lower mantissa precision.",
+            "B": "`bfloat16` is a 32-bit format with 16 exponent bits and 15 mantissa bits.",
+            "C": "`bfloat16` has only 2 exponent bits and overflows at values greater than 4.0.",
+            "D": "`bfloat16` is an unsigned 16-bit integer type identical to `torch.int16`."
+        },
+        "correct": ["A"],
+        "explanation": "`torch.bfloat16` (Brain Floating Point) allocates 1 sign bit, 8 exponent bits (matching `float32`), and 7 mantissa bits (compared to 10 in `float16` and 23 in `float32`). Because it preserves the 8-bit exponent of `float32`, `bfloat16` maintains the same dynamic range as `float32` and is much less prone to gradient underflow or overflow than `float16`.",
+        "option_explanations": {
+            "A": "Correct. `bfloat16` retains the 8-bit exponent of `float32`, preserving dynamic range in 16 bits.",
+            "B": "Incorrect. `bfloat16` uses 16 bits total (2 bytes per element), not 32 bits.",
+            "C": "Incorrect. `bfloat16` has 8 exponent bits and can represent values up to ~3.4e38.",
+            "D": "Incorrect. `bfloat16` is a floating-point type (`torch.is_floating_point` returns `True`)."
+        },
+        "competency": "Differentiate bit layouts and dynamic ranges of float32, float16, and bfloat16",
+        "source": "modules/module_2_tensors/2_tensor_attributes.ipynb & modules/module_9_amp_profiler_benchmarking_etc/1_amp_basics.ipynb"
+    },
+    {
+        "id": "PTCA-P-037",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C2: Precision & Automatic Mixed Precision (AMP)",
+        "difficulty": "Easy",
+        "multi_select": False,
+        "stem": "Which PyTorch function returns a boolean indicating whether a given `device_type` (such as `'cuda'`, `'cpu'`, or `'xpu'`) supports `torch.amp.autocast`?",
+        "code": "device_type = 'cuda' if torch.cuda.is_available() else 'cpu'\n# Check if autocast is supported on device_type:",
+        "options": {
+            "A": "`torch.amp.autocast_mode.is_autocast_available(device_type=device_type)`",
+            "B": "`torch.cuda.is_bf16_only()`",
+            "C": "`torch.nn.Module.has_amp(device_type)`",
+            "D": "`torch.is_floating_point(device_type)`"
+        },
+        "correct": ["A"],
+        "explanation": "As demonstrated in `1_amp_basics.ipynb`, `torch.amp.autocast_mode.is_autocast_available(device_type=device_type)` returns `True` if the specified device type supports AMP autocasting and `False` otherwise.",
+        "option_explanations": {
+            "A": "Correct. `torch.amp.autocast_mode.is_autocast_available(device_type=...)` checks hardware/device support for autocast.",
+            "B": "Incorrect. `is_bf16_only` is not a PyTorch API.",
+            "C": "Incorrect. `nn.Module` has no `has_amp` method.",
+            "D": "Incorrect. `torch.is_floating_point` checks whether a tensor has a floating-point dtype."
+        },
+        "competency": "Check device support for AMP using is_autocast_available",
+        "source": "modules/module_9_amp_profiler_benchmarking_etc/1_amp_basics.ipynb"
+    },
+    {
+        "id": "PTCA-P-038",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C2: Precision & Automatic Mixed Precision (AMP)",
+        "difficulty": "Easy",
+        "multi_select": False,
+        "stem": "How can `torch.amp.autocast` be applied directly to the `forward` method of a custom `nn.Module` class without requiring a `with` statement at the call site?",
+        "code": "import torch\nimport torch.nn as nn\n\nclass Model(nn.Module):\n    def __init__(self):\n        super().__init__()\n        self.fc = nn.Linear(1024, 512)\n\n    # Apply autocast here\n    def forward(self, x):\n        return self.fc(x)",
+        "options": {
+            "A": "Decorate `forward` with `@torch.amp.autocast(device_type=device_type)`.",
+            "B": "Pass `autocast=True` to `super().__init__(autocast=True)`.",
+            "C": "Rename `def forward(self, x):` to `def autocast_forward(self, x):`.",
+            "D": "Decorate `__init__` with `@torch.amp.GradScaler()`."
+        },
+        "correct": ["A"],
+        "explanation": "As shown in `1_amp_basics.ipynb`, `torch.amp.autocast(device_type=device_type)` can be used as a function decorator directly above `def forward(self, x):` inside an `nn.Module` subclass.",
+        "option_explanations": {
+            "A": "Correct. `@torch.amp.autocast(device_type=device_type)` decorates `forward` so every call runs in an autocast context.",
+            "B": "Incorrect. `nn.Module.__init__()` does not accept an `autocast` keyword argument.",
+            "C": "Incorrect. `nn.Module.__call__` invokes `forward`, not `autocast_forward`.",
+            "D": "Incorrect. `GradScaler` is not a decorator for `__init__`."
+        },
+        "competency": "Use @torch.amp.autocast as a decorator on nn.Module.forward",
+        "source": "modules/module_9_amp_profiler_benchmarking_etc/1_amp_basics.ipynb"
+    },
+    {
+        "id": "PTCA-P-039",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C2: Precision & Automatic Mixed Precision (AMP)",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "In a standard AMP training loop, which parts of the training step should be placed **inside** the `with torch.autocast(device_type=device, enabled=use_amp):` context manager?",
+        "code": "optimizer.zero_grad()\nwith torch.autocast(device_type=device, enabled=use_amp):\n    # What goes inside here?\n...",
+        "options": {
+            "A": "Only the forward pass (`output = model(input)`) and loss computation (`loss = loss_fn(output, target)`), while `backward()` and `optimizer.step()` are placed outside the `autocast` block.",
+            "B": "Only `loss.backward()` and `optimizer.step()`, while `model(input)` runs outside `autocast`.",
+            "C": "Only `optimizer.zero_grad()`.",
+            "D": "Model instantiation (`model = MyModel()`) and `DataLoader` creation, but not the forward pass."
+        },
+        "correct": ["A"],
+        "explanation": "Only the forward pass and loss calculation belong inside the `with torch.autocast(...):` context manager. PyTorch's autograd engine automatically executes backward operations in the same dtypes that were used during the corresponding forward operations, so `backward()` and `optimizer.step()` should be called outside the `autocast` block.",
+        "option_explanations": {
+            "A": "Correct. Wrap the forward pass and loss computation in `autocast`; keep `backward()` and `step()` outside.",
+            "B": "Incorrect. Wrapping `backward()` in `autocast` is discouraged; `autocast` is designed for forward operations.",
+            "C": "Incorrect. `zero_grad()` resets gradients and does not benefit from `autocast`.",
+            "D": "Incorrect. Master model parameters should be initialized in FP32 outside `autocast`."
+        },
+        "competency": "Scope torch.autocast properly around the forward pass and loss calculation",
+        "source": "modules/module_9_amp_profiler_benchmarking_etc/1_amp_basics.ipynb"
+    },
+    {
+        "id": "PTCA-P-040",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C2: Precision & Automatic Mixed Precision (AMP)",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "When training a model with `torch.amp.autocast(device_type='cuda', dtype=torch.float16)`, what `dtype` are the model's master parameters (`p.dtype` for `p` in `model.parameters()`) stored in?",
+        "code": "model = make_model(in_size, out_size, num_layers).to('cuda')\nwith torch.amp.autocast(device_type='cuda', dtype=torch.float16):\n    out = model(x)\nprint(next(model.parameters()).dtype)",
+        "options": {
+            "A": "`torch.float32` (master weights remain stored in FP32; `autocast` casts weight operands on-the-fly for eligible operations without altering `p.dtype`).",
+            "B": "`torch.float16` (entering `autocast` permanently overwrites all model parameters in-place to FP16).",
+            "C": "`torch.int8`",
+            "D": "`torch.float64`"
+        },
+        "correct": ["A"],
+        "explanation": "As demonstrated in `amp_viz.py` (`stored_dtype: float32`), master model weights must remain in `torch.float32`. During the `autocast` forward pass, PyTorch casts weight and activation operands on-the-fly for eligible ops (like `linear` / `addmm`) while keeping the underlying `nn.Parameter` in `float32` so small weight updates `lr * grad` do not underflow during `optimizer.step()`.",
+        "option_explanations": {
+            "A": "Correct. Master weights remain `torch.float32` even inside an `autocast` block.",
+            "B": "Incorrect. `autocast` does not mutate `model.parameters()` in-place to `float16`.",
+            "C": "Incorrect. AMP uses floating-point types, not `int8`.",
+            "D": "Incorrect. Default PyTorch parameters are `float32`, not `float64`."
+        },
+        "competency": "Understand why master model parameters remain in float32 during AMP training",
+        "source": "modules/module_9_amp_profiler_benchmarking_etc/amp_viz.py"
+    },
+    {
+        "id": "PTCA-P-041",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C2: Precision & Automatic Mixed Precision (AMP)",
+        "difficulty": "Medium",
+        "multi_select": True,
+        "stem": "Under `torch.amp.autocast(device_type='cuda', dtype=torch.float16)`, which TWO of the following operations are automatically downcast to `float16` to leverage Tensor Cores? (Select 2)",
+        "code": "with torch.amp.autocast(device_type='cuda', dtype=torch.float16):\n    # Which ops run in float16?",
+        "options": {
+            "A": "Linear layers and matrix multiplications (`linear`, `matmul`, `mm`, `bmm`, `addmm`)",
+            "B": "Convolutions (`conv1d`, `conv2d`, `conv3d`)",
+            "C": "Loss functions (`mse_loss`, `cross_entropy`, `binary_cross_entropy_with_logits`)",
+            "D": "Cumulative sum and vector norm reductions (`cumsum`, `norm`)"
+        },
+        "correct": ["A", "B"],
+        "explanation": "As shown in `1_amp_basics.ipynb` and `amp_viz.py`, `autocast` downcasts compute-heavy matrix multiplications (`matmul`, `mm`, `bmm`, `addmm`, `linear`) and convolutions (`conv2d`, etc.) to `float16` (or `bfloat16`), where Tensor Cores provide massive speedups, while keeping reductions, normalizations, and loss functions in `float32` for numerical stability.",
+        "option_explanations": {
+            "A": "Correct. Matrix multiplications and linear layers are downcast to 16-bit precision.",
+            "B": "Correct. Convolutions are downcast to 16-bit precision.",
+            "C": "Incorrect. Loss functions run in `float32` to maintain numerical accuracy.",
+            "D": "Incorrect. Reductions like `cumsum` and `norm` run in `float32` to avoid accumulation overflow/precision loss."
+        },
+        "competency": "Identify operations downcast to FP16/BF16 vs preserved in FP32 by autocast",
+        "source": "modules/module_9_amp_profiler_benchmarking_etc/1_amp_basics.ipynb & amp_viz.py"
+    },
+    {
+        "id": "PTCA-P-042",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C2: Precision & Automatic Mixed Precision (AMP)",
+        "difficulty": "Medium",
+        "multi_select": True,
+        "stem": "When inspecting an AMP forward pass using `amp_viz.py` on a model containing `nn.Linear`, `nn.LayerNorm`, and `nn.MSELoss`, which TWO of the following operations execute in `float32` (or produce `float32` output when given `float32` weights/targets) to preserve numerical stability? (Select 2)",
+        "code": "# Model: Linear -> LayerNorm -> Linear -> MSELoss\nwith torch.amp.autocast(device_type='cuda', dtype=torch.float16):\n    output = demo(x)\n    loss = loss_fn(output, y)",
+        "options": {
+            "A": "`nn.LayerNorm` (`layer_norm` / `native_layer_norm`)",
+            "B": "`nn.MSELoss` (`mse_loss`) and `softmax` / `log_softmax`",
+            "C": "`torch.mm` and `torch.bmm`",
+            "D": "`torch.addmm` inside `nn.Linear`"
+        },
+        "correct": ["A", "B"],
+        "explanation": "In PyTorch's autocast op policy (demonstrated in `amp_viz.py`), `addmm`, `mm`, `bmm`, `matmul`, and `linear` cast inputs to `float16`/`bfloat16`, whereas `layer_norm`, `softmax`, `log_softmax`, and loss functions (`mse_loss`, `cross_entropy`) execute in `float32` because variance/sum reductions and exponentials are sensitive to precision loss and overflow.",
+        "option_explanations": {
+            "A": "Correct. `LayerNorm` computes mean and variance reductions in `float32` (and with `float32` affine weights, outputs `float32`).",
+            "B": "Correct. `mse_loss`, `softmax`, and `log_softmax` are promoted to `float32` under `autocast`.",
+            "C": "Incorrect. `mm` and `bmm` are downcast to `float16`.",
+            "D": "Incorrect. `addmm` inside `nn.Linear` is downcast to `float16`."
+        },
+        "competency": "Trace dtype transitions across Linear, LayerNorm, and Loss layers under autocast",
+        "source": "modules/module_9_amp_profiler_benchmarking_etc/amp_viz.py"
+    },
+    {
+        "id": "PTCA-P-043",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C2: Precision & Automatic Mixed Precision (AMP)",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "Suppose a specific sub-block of your model is numerically unstable in `float16` and must be forced to run in full `float32` inside an outer `autocast`-enabled forward pass. How should you write that sub-region?",
+        "code": "with torch.autocast(device_type=\"cuda\", enabled=True):\n    x = self.conv_block(x)  # runs in float16\n    # Force unstable_op to run in float32 here:",
+        "options": {
+            "A": "Wrap the sub-region with `with torch.autocast(device_type=\"cuda\", enabled=False):` and explicitly cast the input tensor `x.float()` before calling `unstable_op`.",
+            "B": "Wrap the sub-region with `with torch.no_grad():`.",
+            "C": "Call `scaler.step(optimizer)` inside `forward()`.",
+            "D": "Set `x.requires_grad = False`."
+        },
+        "correct": ["A"],
+        "explanation": "As noted in `1_amp_basics.ipynb`, autocast can be disabled in sub-regions within an autocast-enabled region by wrapping those sub-regions with `torch.autocast(device_type=..., enabled=False)`. Because `x` coming out of `conv_block` is already `float16`, casting `x.float()` inside the `enabled=False` block ensures the sub-region executes in `float32`.",
+        "option_explanations": {
+            "A": "Correct. `torch.autocast(device_type='cuda', enabled=False)` disables autocasting in the sub-region, and `.float()` ensures previously downcast tensors are in FP32.",
+            "B": "Incorrect. `torch.no_grad()` disables gradient tracking, not autocasting.",
+            "C": "Incorrect. `scaler.step` is an optimizer step method, not a precision context manager.",
+            "D": "Incorrect. Detaching gradients does not change tensor dtype."
+        },
+        "competency": "Disable autocast selectively in numerically sensitive sub-regions",
+        "source": "modules/module_9_amp_profiler_benchmarking_etc/1_amp_basics.ipynb"
+    },
+    {
+        "id": "PTCA-P-044",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C2: Precision & Automatic Mixed Precision (AMP)",
+        "difficulty": "Easy",
+        "multi_select": False,
+        "stem": "Why is `torch.amp.GradScaler` needed when training with `torch.float16` in AMP?",
+        "code": "scaler = torch.amp.GradScaler()",
+        "options": {
+            "A": "Because small gradient magnitudes in `float16` can underflow to zero due to `float16`'s narrow dynamic range; scaling the loss up before `backward()` shifts gradients into `float16`'s representable range.",
+            "B": "Because `GradScaler` compresses model checkpoints into `.zip` archives on disk.",
+            "C": "Because `GradScaler` automatically increases the batch size when GPU memory is free.",
+            "D": "Because `float16` tensors cannot be multiplied without a `GradScaler` object."
+        },
+        "correct": ["A"],
+        "explanation": "In `torch.float16`, small gradient values (e.g., `< 6e-8`) flush to zero (underflow), preventing model weights from learning. `GradScaler` multiplies the loss by a scale factor $S$ before `backward()` so gradients are scaled by $S$ throughout backpropagation, keeping them within `float16`'s representable dynamic range, and then unscales them before the optimizer updates the FP32 weights.",
+        "option_explanations": {
+            "A": "Correct. `GradScaler` prevents gradient underflow in `float16` by scaling the loss prior to backpropagation and unscaling prior to the weight update.",
+            "B": "Incorrect. `GradScaler` does not perform file compression.",
+            "C": "Incorrect. `GradScaler` scales loss/gradient values, not batch sizes.",
+            "D": "Incorrect. Forward `float16` tensor operations work without `GradScaler` (e.g., during inference)."
+        },
+        "competency": "Explain the purpose of GradScaler in preventing FP16 gradient underflow",
+        "source": "modules/module_9_amp_profiler_benchmarking_etc/1_amp_basics.ipynb"
+    },
+    {
+        "id": "PTCA-P-045",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C2: Precision & Automatic Mixed Precision (AMP)",
+        "difficulty": "Easy",
+        "multi_select": False,
+        "stem": "What is the exact sequence of `GradScaler` method calls required after computing `loss` inside an `autocast` block during a training iteration?",
+        "code": "with torch.autocast(device_type=device, enabled=use_amp):\n    output = model(input)\n    loss = loss_fn(output, target)\n\n# Complete the backward and optimizer step using scaler:",
+        "options": {
+            "A": "`scaler.scale(loss).backward()` -> `scaler.step(optimizer)` -> `scaler.update()`",
+            "B": "`loss.backward()` -> `scaler.update()` -> `scaler.step(optimizer)`",
+            "C": "`scaler.step(optimizer)` -> `scaler.scale(loss).backward()` -> `optimizer.step()`",
+            "D": "`scaler.unscale_(loss)` -> `loss.backward()` -> `scaler.scale(optimizer)`"
+        },
+        "correct": ["A"],
+        "explanation": "As shown in `1_amp_basics.ipynb`, the three-step `GradScaler` sequence after the `autocast` forward pass is:\n1. `scaler.scale(loss).backward()` to compute scaled gradients,\n2. `scaler.step(optimizer)` to unscale gradients and step the optimizer (if no infs/NaNs occurred),\n3. `scaler.update()` to adjust the scale factor for the next iteration.",
+        "option_explanations": {
+            "A": "Correct. Scale the loss and backpropagate, step the optimizer via the scaler, and update the scale factor.",
+            "B": "Incorrect. Calling `loss.backward()` directly does not scale the loss, and `update()` must come after `step()`.",
+            "C": "Incorrect. `backward()` must precede `scaler.step(optimizer)`, and you must not call `optimizer.step()` a second time.",
+            "D": "Incorrect. `unscale_` takes an `optimizer`, not `loss`, and `scale` takes `loss`, not `optimizer`."
+        },
+        "competency": "Implement the standard GradScaler training loop sequence",
+        "source": "modules/module_9_amp_profiler_benchmarking_etc/1_amp_basics.ipynb"
+    },
+    {
+        "id": "PTCA-P-046",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C2: Precision & Automatic Mixed Precision (AMP)",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "What does `scaler.step(optimizer)` do internally if it detects `Inf` or `NaN` values in the unscaled gradients of any parameter?",
+        "code": "scaler.scale(loss).backward()\nscaler.step(optimizer)\nscaler.update()",
+        "options": {
+            "A": "It skips calling `optimizer.step()` for that iteration so the FP32 master weights are not corrupted by `Inf`/`NaN`, and `scaler.update()` subsequently reduces the scale factor.",
+            "B": "It replaces all model weights with random Gaussian noise.",
+            "C": "It raises a fatal `SystemExit` exception and terminates training.",
+            "D": "It applies the `Inf`/`NaN` gradients to the weights anyway and resets the learning rate to 0."
+        },
+        "correct": ["A"],
+        "explanation": "`scaler.step(optimizer)` first unscales the gradients (if not already unscaled) and checks them for `Inf` or `NaN`. If any `Inf` or `NaN` is found (indicating the current loss scale factor was too aggressive and caused gradient overflow), `scaler.step(optimizer)` skips the underlying `optimizer.step()` call to protect the model weights, and `scaler.update()` multiplies the scale factor by its backoff factor (e.g., 0.5).",
+        "option_explanations": {
+            "A": "Correct. `scaler.step` skips the weight update on overflow, and `scaler.update()` decreases the scale factor.",
+            "B": "Incorrect. Weights are preserved untouched when a step is skipped.",
+            "C": "Incorrect. Dynamic scale backoff handles transient overflows gracefully without crashing.",
+            "D": "Incorrect. Applying `Inf`/`NaN` gradients would permanently corrupt the model parameters."
+        },
+        "competency": "Explain how GradScaler handles gradient overflow (Inf/NaN) during scaler.step and scaler.update",
+        "source": "modules/module_9_amp_profiler_benchmarking_etc/1_amp_basics.ipynb & torch.amp docs"
+    },
+    {
+        "id": "PTCA-P-047",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C2: Precision & Automatic Mixed Precision (AMP)",
+        "difficulty": "Hard",
+        "multi_select": False,
+        "stem": "When combining gradient clipping (`torch.nn.utils.clip_grad_norm_`) with `torch.amp.GradScaler`, why must `scaler.unscale_(optimizer)` be called explicitly before `clip_grad_norm_`?",
+        "code": "scaler.scale(loss).backward()\n# We want to clip gradients to max_norm=1.0:\nscaler.unscale_(optimizer)\ntorch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)\nscaler.step(optimizer)\nscaler.update()",
+        "options": {
+            "A": "Because immediately after `scaler.scale(loss).backward()`, `p.grad` tensors are still multiplied by the loss scale factor $S$; clipping without unscaling first would clip against an artificially scaled norm instead of the true gradient norm.",
+            "B": "Because `clip_grad_norm_` only accepts `torch.int64` tensors and `unscale_` converts gradients to `int64`.",
+            "C": "Because `scaler.unscale_(optimizer)` zeroes out all gradients like `optimizer.zero_grad()`.",
+            "D": "Because `scaler.step(optimizer)` refuses to run unless `clip_grad_norm_` is called every step."
+        },
+        "correct": ["A"],
+        "explanation": "As demonstrated in `amp_viz.py` (`before` vs `after` `scaler.unscale_(optimizer)`), gradients stored in `p.grad` after `scaled_loss.backward()` are scaled by $S$ (e.g., $65536$). If you call `clip_grad_norm_(..., max_norm=1.0)` before unscaling, the gradients are divided by $S$ AND clipped to $1.0$, effectively shrinking them by $1/S$. Calling `scaler.unscale_(optimizer)` first restores `p.grad` to true unscaled magnitudes so `clip_grad_norm_` clips at the intended threshold, and `scaler.step(optimizer)` knows not to unscale a second time.",
+        "option_explanations": {
+            "A": "Correct. `scaler.unscale_(optimizer)` divides `p.grad` by the scale factor in-place so gradient inspection or clipping operates on true gradient magnitudes.",
+            "B": "Incorrect. Gradients remain floating-point (`float32`).",
+            "C": "Incorrect. `unscale_` divides gradients by the scale factor $S$; it does not zero them.",
+            "D": "Incorrect. Gradient clipping is optional."
+        },
+        "competency": "Use scaler.unscale_(optimizer) correctly prior to gradient clipping in AMP",
+        "source": "modules/module_9_amp_profiler_benchmarking_etc/amp_viz.py & torch.amp docs"
+    },
+    {
+        "id": "PTCA-P-048",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C2: Precision & Automatic Mixed Precision (AMP)",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "In `amp_viz.py`, when `model` parameters are stored in `float32` and the forward pass runs under `torch.amp.autocast(device_type='cuda', dtype=torch.float16)`, what is the `dtype` of `p.grad` (parameter gradients) and `optimizer.state[p]['momentum_buffer']` after backward and optimizer step?",
+        "code": "parameters = [{\n    \"parameter\": name,\n    \"stored_dtype\": dtype_name(p),\n    \"grad_dtype\": dtype_name(p.grad)\n} for name, p in demo.named_parameters()]",
+        "options": {
+            "A": "Both `p.grad` and `momentum_buffer` are `float32`, matching the `float32` master parameter `p`.",
+            "B": "Both `p.grad` and `momentum_buffer` are `float16`.",
+            "C": "`p.grad` is `int32` and `momentum_buffer` is `float64`.",
+            "D": "`p.grad` is `None` because AMP disables parameter gradients."
+        },
+        "correct": ["A"],
+        "explanation": "Even though `nn.Linear` casts its weight to `float16` during the autocast forward pass, the cast operation itself is recorded by autograd. During the backward pass, the gradient flows back through the cast op and accumulates into `p.grad` in the master parameter's native `dtype` (`float32`), and the SGD momentum buffer is likewise maintained in `float32`.",
+        "option_explanations": {
+            "A": "Correct. Gradients flow back through the autocast cast node to accumulate into `p.grad` as `float32`, and optimizer state buffers also remain `float32`.",
+            "B": "Incorrect. While intermediate activation gradients in linear layers are `float16`, the leaf parameter gradient `p.grad` matches `p.dtype` (`float32`).",
+            "C": "Incorrect. Neither `int32` nor `float64` is used.",
+            "D": "Incorrect. Parameter gradients are populated normally."
+        },
+        "competency": "Trace the dtype of parameter gradients and optimizer state buffers in AMP",
+        "source": "modules/module_9_amp_profiler_benchmarking_etc/amp_viz.py"
+    },
+    {
+        "id": "PTCA-P-049",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C2: Precision & Automatic Mixed Precision (AMP)",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "Why is `torch.amp.GradScaler` typically **not** needed when using `dtype=torch.bfloat16` with `torch.amp.autocast`?",
+        "code": "with torch.amp.autocast(device_type=\"cuda\", dtype=torch.bfloat16):\n    output = model(input)\n    loss = loss_fn(output, target)\nloss.backward()\noptimizer.step()",
+        "options": {
+            "A": "Because `bfloat16` has the same 8-bit exponent (and thus the same dynamic range) as `float32`, so small gradients do not suffer from the narrow-range underflow problem of `float16`.",
+            "B": "Because `bfloat16` automatically runs `GradScaler` inside the GPU hardware microcode.",
+            "C": "Because `bfloat16` can only be used for inference and never for training.",
+            "D": "Because `bfloat16` uses 64 bits per element."
+        },
+        "correct": ["A"],
+        "explanation": "Gradient scaling is specifically required to overcome `float16`'s narrow 5-bit exponent range. Because `bfloat16` uses an 8-bit exponent identical to `float32`, it can represent very small and very large magnitudes without underflowing or overflowing, making `GradScaler` unnecessary.",
+        "option_explanations": {
+            "A": "Correct. `bfloat16` matches `float32`'s dynamic range, eliminating the need for loss scaling.",
+            "B": "Incorrect. Hardware does not perform automatic loss scaling for `bfloat16`.",
+            "C": "Incorrect. `bfloat16` is widely used for training large models.",
+            "D": "Incorrect. `bfloat16` uses 16 bits per element."
+        },
+        "competency": "Understand why bfloat16 AMP training does not require GradScaler",
+        "source": "modules/module_2_tensors/2_tensor_attributes.ipynb & modules/module_9_amp_profiler_benchmarking_etc/1_amp_basics.ipynb"
+    },
+    {
+        "id": "PTCA-P-050",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C2: Precision & Automatic Mixed Precision (AMP)",
+        "difficulty": "Easy",
+        "multi_select": False,
+        "stem": "According to `1_amp_basics.ipynb`, when does Automatic Mixed Precision (AMP) provide the greatest speedup, and why might a very small neural network see little performance improvement from AMP?",
+        "code": "",
+        "options": {
+            "A": "AMP provides the greatest speedup when the GPU hardware is saturated with compute/memory work; very small networks are often CPU-bound (dominated by kernel launch overhead) and thus see little improvement from mixed precision.",
+            "B": "AMP only speeds up networks with fewer than 10 parameters and slows down large networks.",
+            "C": "Small networks automatically convert themselves to FP64 when `autocast` is enabled.",
+            "D": "AMP only works when batch size is exactly 1."
+        },
+        "correct": ["A"],
+        "explanation": "As highlighted in the info box of `1_amp_basics.ipynb`: 'Typically, when the GPU hardware is saturated with work (memory is almost fully being used), mixed precision provides the greatest speedup. Small networks may be CPU bound and thus won't have much improved performance with mixed precision.'",
+        "option_explanations": {
+            "A": "Correct. Saturated GPU workloads benefit most from Tensor Cores and reduced memory traffic, whereas tiny models are bottlenecked by CPU dispatch overhead.",
+            "B": "Incorrect. Large compute/memory-intensive networks benefit the most from AMP.",
+            "C": "Incorrect. Small networks do not convert to FP64 under `autocast`.",
+            "D": "Incorrect. Larger batch sizes saturate the GPU better and generally show stronger AMP speedups."
+        },
+        "competency": "Identify workload characteristics where AMP provides maximum vs minimal speedup",
+        "source": "modules/module_9_amp_profiler_benchmarking_etc/1_amp_basics.ipynb"
+    },
+    {
+        "id": "PTCA-P-051",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C2: Precision & Automatic Mixed Precision (AMP)",
+        "difficulty": "Easy",
+        "multi_select": False,
+        "stem": "Which PyTorch function checks whether a tensor's `dtype` is a floating-point data type (`float32`, `float64`, `float16`, or `bfloat16`)?",
+        "code": "import torch\n\nfloat_tensor = torch.ones(2, dtype=torch.float16)\nprint(torch.is_floating_point(float_tensor))",
+        "options": {
+            "A": "`torch.is_floating_point(tensor)`",
+            "B": "`torch.is_complex(tensor)`",
+            "C": "`torch.is_GradEnabled(tensor)`",
+            "D": "`tensor.has_float_cores()`"
+        },
+        "correct": ["A"],
+        "explanation": "As shown in `2_tensor_attributes.ipynb`, `torch.is_floating_point(tensor)` (or `tensor.is_floating_point()`) returns `True` if the tensor's data type is one of PyTorch's floating-point types (`float64`, `float32`, `float16`, `bfloat16`).",
+        "option_explanations": {
+            "A": "Correct. `torch.is_floating_point(tensor)` returns `True` for floating-point tensors.",
+            "B": "Incorrect. `torch.is_complex` checks for complex dtypes (`complex64`, `complex128`).",
+            "C": "Incorrect. `is_GradEnabled` is not a valid tensor dtype function.",
+            "D": "Incorrect. `has_float_cores` does not exist."
+        },
+        "competency": "Inspect floating-point tensor dtypes using torch.is_floating_point",
+        "source": "modules/module_2_tensors/2_tensor_attributes.ipynb"
+    },
+    {
+        "id": "PTCA-P-052",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C2: Precision & Automatic Mixed Precision (AMP)",
+        "difficulty": "Easy",
+        "multi_select": True,
+        "stem": "In PyTorch (`2_tensor_attributes.ipynb`), which TWO pairs of `torch.dtype` aliases refer to the exact same underlying data type? (Select 2)",
+        "code": "import torch",
+        "options": {
+            "A": "`torch.float32` and `torch.float`",
+            "B": "`torch.float16` and `torch.half`",
+            "C": "`torch.bfloat16` and `torch.double`",
+            "D": "`torch.int16` and `torch.long`"
+        },
+        "correct": ["A", "B"],
+        "explanation": "As listed in `2_tensor_attributes.ipynb`: 32-bit floating point is `torch.float32` or `torch.float`; 16-bit IEEE floating point is `torch.float16` or `torch.half`; 64-bit floating point is `torch.float64` or `torch.double`; 16-bit integer is `torch.int16` or `torch.short`; and 64-bit integer is `torch.int64` or `torch.long`.",
+        "option_explanations": {
+            "A": "Correct. `torch.float` is the alias for `torch.float32`.",
+            "B": "Correct. `torch.half` is the alias for `torch.float16`.",
+            "C": "Incorrect. `torch.double` is `torch.float64` (64-bit), whereas `torch.bfloat16` is 16-bit Brain Floating Point.",
+            "D": "Incorrect. `torch.long` is `torch.int64` (64-bit), whereas `torch.int16` is `torch.short` (16-bit)."
+        },
+        "competency": "Identify PyTorch torch.dtype aliases for floating-point types",
+        "source": "modules/module_2_tensors/2_tensor_attributes.ipynb"
+    },
+    {
+        "id": "PTCA-P-053",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C2: Precision & Automatic Mixed Precision (AMP)",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "In `1_amp_basics.ipynb`, what is the default `dtype` used by `torch.amp.autocast` when `dtype` is not explicitly specified for `device_type='cuda'` versus `device_type='cpu'`?",
+        "code": "# On CUDA:\nwith torch.amp.autocast(device_type='cuda'): ...\n# On CPU:\nwith torch.amp.autocast(device_type='cpu'): ...",
+        "options": {
+            "A": "On `'cuda'`, `autocast` defaults to `torch.float16`; on `'cpu'`, `autocast` defaults to `torch.bfloat16`.",
+            "B": "On `'cuda'`, `autocast` defaults to `torch.float64`; on `'cpu'`, it defaults to `torch.int8`.",
+            "C": "Both default to `torch.float32` and perform no casting.",
+            "D": "On `'cuda'`, `autocast` defaults to `torch.uint8`."
+        },
+        "correct": ["A"],
+        "explanation": "By default in PyTorch (and reflected in `1_amp_basics.ipynb`: `amp_dtype = torch.float16 if device_type == 'cuda' else torch.bfloat16`), `torch.amp.autocast` defaults to `torch.float16` on CUDA devices and `torch.bfloat16` on CPU.",
+        "option_explanations": {
+            "A": "Correct. Default autocast low-precision dtype is `float16` on CUDA and `bfloat16` on CPU.",
+            "B": "Incorrect. Neither `float64` nor `int8` is used by `autocast`.",
+            "C": "Incorrect. `autocast` casts eligible ops to 16-bit floating point.",
+            "D": "Incorrect. `uint8` is an integer type, not used by `autocast`."
+        },
+        "competency": "Know the default 16-bit dtypes used by torch.amp.autocast on CUDA vs CPU",
+        "source": "modules/module_9_amp_profiler_benchmarking_etc/1_amp_basics.ipynb"
+    },
+    {
+        "id": "PTCA-P-054",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C2: Precision & Automatic Mixed Precision (AMP)",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "Look at the `make_scaler` helper in `1_amp_basics.ipynb`. What happens when `torch.amp.GradScaler(device_type, enabled=False)` is constructed with `enabled=False`?",
+        "code": "def make_scaler(enabled, dtype):\n    return torch.amp.GradScaler(device_type, enabled=(enabled and device_type in ('cuda', 'xpu')))\n\nscaler = make_scaler(enabled=False, dtype=None)\nscaler.scale(loss).backward()\nscaler.step(optimizer)\nscaler.update()",
+        "options": {
+            "A": "`scaler.scale(loss)` returns `loss` unchanged (scale factor 1.0), `scaler.step(optimizer)` simply calls `optimizer.step()`, and `scaler.update()` is a no-op, allowing the exact same training loop code to run seamlessly with or without AMP.",
+            "B": "`scaler.scale(loss)` raises a `RuntimeError: GradScaler is disabled`.",
+            "C": "`scaler.step(optimizer)` skips all weight updates so the model never trains.",
+            "D": "`scaler.scale(loss)` multiplies `loss` by `0.0`."
+        },
+        "correct": ["A"],
+        "explanation": "Passing `enabled=False` to `torch.amp.GradScaler` (and `torch.amp.autocast`) turns its methods into clean pass-through no-ops: `scaler.scale(loss)` returns `loss` unmodified, `scaler.step(optimizer)` directly invokes `optimizer.step()`, and `scaler.update()` does nothing. This avoids `if/else` branching in the training loop.",
+        "option_explanations": {
+            "A": "Correct. A disabled `GradScaler` acts as a transparent pass-through so a single training loop supports both FP32 and AMP.",
+            "B": "Incorrect. Disabling `GradScaler` does not raise an error.",
+            "C": "Incorrect. `scaler.step(optimizer)` calls `optimizer.step()` normally when disabled.",
+            "D": "Incorrect. When disabled, the effective scale is `1.0` (unscaled), not `0.0`."
+        },
+        "competency": "Write unified FP32/AMP training loops using enabled=use_amp in autocast and GradScaler",
+        "source": "modules/module_9_amp_profiler_benchmarking_etc/1_amp_basics.ipynb & amp_viz.py"
+    },
+    {
+        "id": "PTCA-P-055",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C2: Precision & Automatic Mixed Precision (AMP)",
+        "difficulty": "Hard",
+        "multi_select": False,
+        "stem": "What is wrong with the following AMP training snippet where `loss.backward()` is called instead of `scaler.scale(loss).backward()`?",
+        "code": "scaler = torch.amp.GradScaler('cuda')\nfor x, y in loader:\n    optimizer.zero_grad()\n    with torch.amp.autocast('cuda', dtype=torch.float16):\n        out = model(x)\n        loss = loss_fn(out, y)\n    loss.backward()          # <-- Bug here\n    scaler.step(optimizer)\n    scaler.update()",
+        "options": {
+            "A": "Because `loss` was never scaled by `scaler.scale(loss)`, no scaled gradients were produced (`GradScaler` has no recorded scale state for `optimizer`, raising an error in `scaler.step(optimizer)` and leaving FP16 gradients vulnerable to underflow).",
+            "B": "`loss.backward()` automatically scales the loss by $65536$ even without `scaler.scale(loss)`.",
+            "C": "`optimizer.zero_grad()` must be called after `loss.backward()`.",
+            "D": "Nothing is wrong; `scaler.scale(loss)` is optional when calling `scaler.step(optimizer)`."
+        },
+        "correct": ["A"],
+        "explanation": "If `scaler.scale(loss)` is not called before `.backward()`, the gradients are computed unscaled (risking FP16 underflow), and `scaler.step(optimizer)` will fail with `RuntimeError: No inf checks were recorded for this optimizer` (or divide unscaled gradients by the scale factor if partially tracked).",
+        "option_explanations": {
+            "A": "Correct. `scaler.scale(loss).backward()` is required both to prevent FP16 underflow and to register the optimizer's gradients with `GradScaler` before `scaler.step(optimizer)`.",
+            "B": "Incorrect. `loss.backward()` has no knowledge of `GradScaler` unless `scaler.scale(loss)` wraps `loss`.",
+            "C": "Incorrect. `optimizer.zero_grad()` before the forward pass is standard.",
+            "D": "Incorrect. An enabled `GradScaler` requires `scaler.scale(loss).backward()` prior to `scaler.step(optimizer)`."
+        },
+        "competency": "Debug improper GradScaler usage in mixed precision training loops",
+        "source": "modules/module_9_amp_profiler_benchmarking_etc/1_amp_basics.ipynb"
+    },
+    {
+        "id": "PTCA-P-056",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C2: Precision & Automatic Mixed Precision (AMP)",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "In `1_amp_basics.ipynb`, which PyTorch function is used to measure the peak GPU memory allocated on a `'cuda'` device to verify memory savings from AMP?",
+        "code": "def peak_memory():\n    if device_type == 'cuda':\n        return # <FUNCTION CALL>",
+        "options": {
+            "A": "`torch.cuda.max_memory_allocated()`",
+            "B": "`torch.cuda.synchronize()`",
+            "C": "`torch.cuda.device_count()`",
+            "D": "`torch.cuda.empty_cache()`"
+        },
+        "correct": ["A"],
+        "explanation": "In `1_amp_basics.ipynb`, `peak_memory()` calls `torch.cuda.max_memory_allocated()` on CUDA (and `torch.xpu.max_memory_allocated()` on XPU) to return the peak tensor memory allocated in bytes.",
+        "option_explanations": {
+            "A": "Correct. `torch.cuda.max_memory_allocated()` returns the peak GPU memory occupied by tensors in bytes.",
+            "B": "Incorrect. `torch.cuda.synchronize()` waits for GPU kernels to complete and returns `None`.",
+            "C": "Incorrect. `torch.cuda.device_count()` returns the number of available GPUs.",
+            "D": "Incorrect. `torch.cuda.empty_cache()` releases unused cached memory from PyTorch's caching allocator."
+        },
+        "competency": "Measure peak GPU memory consumption using torch.cuda.max_memory_allocated",
+        "source": "modules/module_9_amp_profiler_benchmarking_etc/1_amp_basics.ipynb"
+    },
+    {
+        "id": "PTCA-P-057",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C2: Precision & Automatic Mixed Precision (AMP)",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "In `2_tensor_attributes.ipynb`, why did running `torch.matmul(float16_1, float16_2)` on the default CPU device take **longer** (1.90s) than `torch.matmul(float32_1, float32_2)` (0.10s)?",
+        "code": "float32_1 = torch.randn(1000, 1000, dtype=torch.float32)\nfloat32_2 = torch.randn(1000, 1000, dtype=torch.float32)\nfloat16_1 = torch.randn(1000, 1000, dtype=torch.float16)\nfloat16_2 = torch.randn(1000, 1000, dtype=torch.float16)\n# Timed on CPU without GPU:",
+        "options": {
+            "A": "`float16` speedups require supported hardware accelerators (such as GPUs with Tensor Cores); many CPUs lack native high-throughput FP16 matrix units and must emulate or upcast FP16 operations, whereas CPU `float32` uses heavily optimized AVX/FMA BLAS routines.",
+            "B": "`float16` tensors occupy 4x more memory in RAM than `float32` tensors.",
+            "C": "`torch.matmul` performs 1000x more arithmetic operations when given `float16` inputs.",
+            "D": "`torch.randn` initializes `float16` tensors with `NaN` values, which stall the CPU."
+        },
+        "correct": ["A"],
+        "explanation": "As noted in `2_tensor_attributes.ipynb`: '`float16` computations (low precision in general) can be faster on supported hardware/GPUs, but it might have reduced accuracy.' On standard CPUs without dedicated FP16 matrix engines (unlike GPU Tensor Cores), FP32 BLAS is natively vectorized while FP16 often incurs conversion overhead (and CPU AMP defaults to `bfloat16` rather than `float16`).",
+        "option_explanations": {
+            "A": "Correct. Hardware support (such as GPU Tensor Cores) determines whether `float16` accelerates matrix multiplication.",
+            "B": "Incorrect. `float16` uses half the memory (2 bytes/element) of `float32` (4 bytes/element).",
+            "C": "Incorrect. The number of FLOPs for a $1000 \\times 1000$ matmul is the same.",
+            "D": "Incorrect. `torch.randn` produces normal finite numbers around 0."
+        },
+        "competency": "Understand hardware dependencies (GPU Tensor Cores vs CPU) for FP16 speedups",
+        "source": "modules/module_2_tensors/2_tensor_attributes.ipynb"
+    },
+    {
+        "id": "PTCA-P-058",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C2: Precision & Automatic Mixed Precision (AMP)",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "When running inference (evaluation) with `torch.no_grad()` and `torch.amp.autocast(device_type='cuda', dtype=torch.float16)`, is `torch.amp.GradScaler` needed?",
+        "code": "model.eval()\nwith torch.no_grad():\n    with torch.amp.autocast(device_type='cuda', dtype=torch.float16):\n        predictions = model(inputs)",
+        "options": {
+            "A": "No; `GradScaler` only scales loss and gradients for the backward pass and optimizer step, neither of which occurs during inference.",
+            "B": "Yes; without `GradScaler`, `model(inputs)` will raise an exception during inference.",
+            "C": "Yes; `GradScaler` is required to convert `model.eval()` back to `model.train()`.",
+            "D": "No, because `torch.amp.autocast` is completely ignored inside `torch.no_grad()`."
+        },
+        "correct": ["A"],
+        "explanation": "During inference (`torch.no_grad()` or `torch.inference_mode()`), no backward pass or gradient calculation takes place. Only `torch.amp.autocast` is used to accelerate the forward pass and reduce activation memory; `GradScaler` is strictly for training.",
+        "option_explanations": {
+            "A": "Correct. Inference has no backward pass or gradients, so `GradScaler` is not used.",
+            "B": "Incorrect. `autocast` works standalone for inference.",
+            "C": "Incorrect. Inference should stay in `model.eval()`.",
+            "D": "Incorrect. `autocast` works normally inside `torch.no_grad()` and `torch.inference_mode()`."
+        },
+        "competency": "Apply torch.amp.autocast for inference without GradScaler",
+        "source": "modules/module_9_amp_profiler_benchmarking_etc/1_amp_basics.ipynb"
+    },
+    {
+        "id": "PTCA-P-059",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C2: Precision & Automatic Mixed Precision (AMP)",
+        "difficulty": "Hard",
+        "multi_select": False,
+        "stem": "In `amp_viz.py`, a hook is registered on `loss` before calling `scaled_loss = scaler.scale(loss); scaled_loss.backward()`. If the current loss scale is $S = 65536.0$, what are `loss.dtype`, `scaled_loss.dtype`, and the initial gradient $\\frac{d(\\text{scaled\\_loss})}{d(\\text{loss})}$ seen by `loss_grad_hook`?",
+        "code": "scale = scaler.get_scale()  # 65536.0\nscaled_loss = scaler.scale(loss)\nscaled_loss.backward()",
+        "options": {
+            "A": "`loss` is `float32`, `scaled_loss` is `float32` with value $\\text{loss} \\times 65536.0$, and the gradient at `loss` is `65536.0` (`float32`).",
+            "B": "`loss` is `float16`, `scaled_loss` is `int16`, and the gradient at `loss` is `1.0`.",
+            "C": "Both `loss` and `scaled_loss` are `bfloat16`, and the gradient at `loss` is `0.0`.",
+            "D": "`scaled_loss` is equal to `loss / 65536.0`."
+        },
+        "correct": ["A"],
+        "explanation": "Under `autocast`, `loss_fn` (`MSELoss`) computes `loss` in `float32`. `scaler.scale(loss)` multiplies `loss` by the FP32 scale factor $S = 65536.0$, producing a `float32` `scaled_loss`. When `scaled_loss.backward()` runs, by the chain rule the derivative of `scaled_loss = S * loss` with respect to `loss` is $S = 65536.0$, which scales all downstream gradients by $S$.",
+        "option_explanations": {
+            "A": "Correct. `loss` and `scaled_loss` are `float32`, and backpropagating from `scaled_loss` injects a scale factor of $S = 65536.0$ at the root of the backward pass.",
+            "B": "Incorrect. `loss` is `float32`, and the gradient at `loss` is $S$, not `1.0`.",
+            "C": "Incorrect. Neither is `bfloat16` when running FP16 AMP with `MSELoss`.",
+            "D": "Incorrect. `scaler.scale(loss)` multiplies by $S$, whereas unscaling divides by $S$."
+        },
+        "competency": "Trace how GradScaler.scale(loss) injects the scale factor into backpropagation",
+        "source": "modules/module_9_amp_profiler_benchmarking_etc/amp_viz.py"
+    },
+    {
+        "id": "PTCA-P-060",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C2: Precision & Automatic Mixed Precision (AMP)",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "Why should you use `torch.nn.BCEWithLogitsLoss` instead of applying `torch.sigmoid` followed by `torch.nn.BCELoss` inside a `torch.amp.autocast` context?",
+        "code": "with torch.amp.autocast(device_type=\"cuda\", dtype=torch.float16):\n    logits = model(x)\n    # Preferred:\n    loss = F.binary_cross_entropy_with_logits(logits, targets)",
+        "options": {
+            "A": "`BCEWithLogitsLoss` fuses the sigmoid and binary cross-entropy using the numerically stable log-sum-exp trick in `float32` and is safe under `autocast`, whereas `BCELoss` on `float16` sigmoid outputs can suffer from $\\log(0) = -\\infty$ underflow and explicitly raises a `RuntimeError` inside `autocast`.",
+            "B": "`BCEWithLogitsLoss` runs in 4-bit integer precision.",
+            "C": "`torch.sigmoid` is only supported on CPU.",
+            "D": "`BCELoss` computes mean squared error instead of cross-entropy."
+        },
+        "correct": ["A"],
+        "explanation": "In `float16`, `sigmoid(logits)` easily saturates to exact `0.0` or `1.0` for moderate logit magnitudes, causing `BCELoss` to evaluate $\\log(0) = -\\infty$. PyTorch's `autocast` therefore bans `F.binary_cross_entropy` (`BCELoss`) with a `RuntimeError` directing users to `F.binary_cross_entropy_with_logits` (`BCEWithLogitsLoss`), which automatically upcasts to `float32` and uses the numerically stable log-sum-exp formulation.",
+        "option_explanations": {
+            "A": "Correct. `BCEWithLogitsLoss` is autocast-safe and numerically stable in `float32`, whereas `BCELoss` is unsafe under `autocast`.",
+            "B": "Incorrect. `BCEWithLogitsLoss` runs in `float32` under `autocast`.",
+            "C": "Incorrect. `torch.sigmoid` is supported on all devices.",
+            "D": "Incorrect. Both compute binary cross-entropy, but `BCEWithLogitsLoss` accepts raw logits."
+        },
+        "competency": "Select autocast-safe loss functions (BCEWithLogitsLoss vs BCELoss)",
+        "source": "modules/module_9_amp_profiler_benchmarking_etc/1_amp_basics.ipynb & torch.amp docs"
+    },
+    {
+        "id": "PTCA-P-061",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C2: Precision & Automatic Mixed Precision (AMP)",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "If a training job using `torch.amp.GradScaler` is checkpointed to disk for later resumption, how should the `GradScaler`'s internal state (such as its current dynamic scale factor `_scale` and `_growth_tracker`) be preserved?",
+        "code": "checkpoint = {\n    'model': model.state_dict(),\n    'optimizer': optimizer.state_dict(),\n    'scaler': scaler.state_dict(),\n}\ntorch.save(checkpoint, 'ckpt.pt')",
+        "options": {
+            "A": "Save `scaler.state_dict()` in the checkpoint dictionary and restore it upon resuming via `scaler.load_state_dict(checkpoint['scaler'])`.",
+            "B": "`GradScaler` is stateless and has no `state_dict()` method.",
+            "C": "Pass `scaler` directly into `model.load_state_dict(scaler)`.",
+            "D": "Save only `loss.item()` because `GradScaler` derives its scale factor from the loss value."
+        },
+        "correct": ["A"],
+        "explanation": "`torch.amp.GradScaler` maintains stateful tracking of the current dynamic loss scale factor and consecutive unskipped steps. To resume training smoothly without resetting the scale factor, save `scaler.state_dict()` and load it via `scaler.load_state_dict(...)`.",
+        "option_explanations": {
+            "A": "Correct. `scaler.state_dict()` and `scaler.load_state_dict()` serialize and restore the dynamic loss scaler state.",
+            "B": "Incorrect. `GradScaler` is stateful and implements `state_dict()` / `load_state_dict()`.",
+            "C": "Incorrect. `model.load_state_dict` expects model parameters, not a `GradScaler`.",
+            "D": "Incorrect. The scale factor is adapted based on `Inf`/`NaN` history, not derived from `loss.item()`."
+        },
+        "competency": "Save and load GradScaler state_dict for training checkpoints",
+        "source": "modules/module_9_amp_profiler_benchmarking_etc/1_amp_basics.ipynb & torch.amp docs"
+    },
+    {
+        "id": "PTCA-P-062",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C2: Precision & Automatic Mixed Precision (AMP)",
+        "difficulty": "Hard",
+        "multi_select": False,
+        "stem": "When accumulating gradients over $K$ micro-batches before taking a single optimizer step with `GradScaler`, how should `scaler.scale`, `scaler.step`, and `scaler.update` be called?",
+        "code": "for i, (inputs, targets) in enumerate(loader):\n    with torch.amp.autocast(device_type='cuda', dtype=torch.float16):\n        outputs = model(inputs)\n        loss = loss_fn(outputs, targets) / accum_steps\n    # How should scaler methods be called here?",
+        "options": {
+            "A": "Call `scaler.scale(loss).backward()` on every micro-batch, and call `scaler.step(optimizer)`, `scaler.update()`, and `optimizer.zero_grad()` only once every `accum_steps` micro-batches.",
+            "B": "Call `scaler.update()` on every micro-batch before `scaler.scale(loss).backward()`, so each micro-batch in the accumulation window uses a different scale factor.",
+            "C": "Call `scaler.step(optimizer)` on every micro-batch and `loss.backward()` only once every `accum_steps`.",
+            "D": "Gradient accumulation is impossible with `GradScaler`."
+        },
+        "correct": ["A"],
+        "explanation": "All micro-batches within a single gradient accumulation step must be scaled by the **exact same** scale factor $S$ so their accumulated sum in `p.grad` is uniformly scaled by $S$. Therefore, `scaler.scale(loss).backward()` is called on each micro-batch, while `scaler.step(optimizer)`, `scaler.update()` (which may change $S$), and `optimizer.zero_grad()` are executed only at the end of the accumulation window.",
+        "option_explanations": {
+            "A": "Correct. Keep the scale factor constant across accumulated micro-batches by only stepping and updating the scaler once per accumulation cycle.",
+            "B": "Incorrect. Changing the scale factor mid-accumulation would sum gradients with inconsistent scales.",
+            "C": "Incorrect. `backward()` must run on every micro-batch to accumulate gradients.",
+            "D": "Incorrect. Gradient accumulation works seamlessly with `GradScaler` when `step()` and `update()` are called once per effective batch."
+        },
+        "competency": "Implement gradient accumulation properly with torch.amp.GradScaler",
+        "source": "modules/module_9_amp_profiler_benchmarking_etc/1_amp_basics.ipynb & torch.amp docs"
+    },
+    {
+        "id": "PTCA-P-063",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C2: Precision & Automatic Mixed Precision (AMP)",
+        "difficulty": "Easy",
+        "multi_select": False,
+        "stem": "How many bytes of memory does a tensor of shape `(1024, 1024)` consume when stored in `torch.float32` versus `torch.float16` (or `torch.bfloat16`)?",
+        "code": "t_fp32 = torch.empty((1024, 1024), dtype=torch.float32)\nt_fp16 = torch.empty((1024, 1024), dtype=torch.float16)",
+        "options": {
+            "A": "`t_fp32` consumes $4\\text{ MiB}$ ($4,194,304$ bytes, 4 bytes/element), whereas `t_fp16` consumes $2\\text{ MiB}$ ($2,097,152$ bytes, 2 bytes/element).",
+            "B": "Both consume $8\\text{ MiB}$ ($8,388,608$ bytes).",
+            "C": "`t_fp32` consumes $1\\text{ MiB}$ and `t_fp16` consumes $4\\text{ MiB}$.",
+            "D": "Both consume $32$ bytes regardless of shape."
+        },
+        "correct": ["A"],
+        "explanation": "A `(1024, 1024)` tensor has $1,048,576$ ($2^{20}$) elements. In `torch.float32` (32 bits = 4 bytes per element), it occupies $4 \\times 2^{20} = 4,194,304$ bytes ($4\\text{ MiB}$). In `torch.float16` or `torch.bfloat16` (16 bits = 2 bytes per element), it occupies $2 \\times 2^{20} = 2,097,152$ bytes ($2\\text{ MiB}$).",
+        "option_explanations": {
+            "A": "Correct. 32-bit floats use 4 bytes per element ($4\\text{ MiB}$) and 16-bit floats use 2 bytes per element ($2\\text{ MiB}$).",
+            "B": "Incorrect. 8 bytes per element corresponds to 64-bit `torch.float64` (`torch.double`).",
+            "C": "Incorrect. 16-bit floats use half the memory of 32-bit floats, not 4x.",
+            "D": "Incorrect. Tensor storage scales linearly with `numel() * element_size()`."
+        },
+        "competency": "Calculate tensor memory footprint across float32, float16, and bfloat16",
+        "source": "modules/module_2_tensors/2_tensor_attributes.ipynb & modules/module_9_amp_profiler_benchmarking_etc/1_amp_basics.ipynb"
+    },
+    {
+        "id": "PTCA-P-064",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C2: Precision & Automatic Mixed Precision (AMP)",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "In `1_amp_basics.ipynb`, why is `model.to(torch.float16)` (manual full-FP16 casting of the entire model) generally **discouraged** compared to using `torch.amp.autocast`?",
+        "code": "# Approach 1 (Manual):\nmodel = model.half()\n\n# Approach 2 (AMP):\nwith torch.amp.autocast(device_type='cuda', dtype=torch.float16):\n    out = model(x)",
+        "options": {
+            "A": "Manually casting the entire model to `float16` forces precision-sensitive layers (like `LayerNorm`, `BatchNorm`, softmax, and reductions) and master weight updates to run in `float16`, frequently causing overflow (`NaN`) or weight update stagnation, whereas `autocast` keeps master weights and sensitive ops in `float32`.",
+            "B": "`model.half()` converts all layers into CPU-only operations.",
+            "C": "`torch.amp.autocast` uses 64-bit floats for every operation.",
+            "D": "`model.half()` doubles the GPU memory usage compared to `float32`."
+        },
+        "correct": ["A"],
+        "explanation": "Pure FP16 (`model.half()`) lacks `float32` master weights (so small updates `lr * grad` round to zero when added to weights) and forces normalization, softmax, and loss reductions into FP16 where they easily overflow or lose precision. `torch.amp.autocast` + `GradScaler` automates mixed precision by retaining FP32 master weights and running reductions/norms in FP32 while accelerating matmuls/convs in FP16.",
+        "option_explanations": {
+            "A": "Correct. AMP preserves numerical stability by keeping master weights and reduction/norm ops in FP32 while using FP16 for compute-bound layers.",
+            "B": "Incorrect. `model.half()` remains on the current device.",
+            "C": "Incorrect. `autocast` mixes FP32 and FP16/BF16, not FP64.",
+            "D": "Incorrect. `model.half()` halves weight memory, though at the cost of numerical stability."
+        },
+        "competency": "Contrast Automatic Mixed Precision (AMP) with naive full-FP16 casting",
+        "source": "modules/module_9_amp_profiler_benchmarking_etc/1_amp_basics.ipynb & amp_viz.py"
+    },
+    {
+        "id": "PTCA-P-065",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C2: Precision & Automatic Mixed Precision (AMP)",
+        "difficulty": "Hard",
+        "multi_select": False,
+        "stem": "In `amp_viz.py`, how does `OperatorDtypeRecorder` intercept every low-level PyTorch operator dispatched during the forward pass to log its input and output tensor dtypes?",
+        "code": "from torch.utils._python_dispatch import TorchDispatchMode\n\nclass OperatorDtypeRecorder(TorchDispatchMode):\n    def __torch_dispatch__(self, func, types, args=(), kwargs=None):\n        kwargs = kwargs or {}\n        result = func(*args, **kwargs)\n        # record operand_dtypes and result_dtypes...\n        return result",
+        "options": {
+            "A": "By subclassing `TorchDispatchMode` and overriding `__torch_dispatch__`, which intercepts ATen operator calls inside a `with forward_recorder:` context block and records operand and result `dtype`s.",
+            "B": "By recompiling the Linux kernel with `strace`.",
+            "C": "By converting the model to ONNX and parsing the XML file.",
+            "D": "By calling `torch.cuda.empty_cache()` after every layer."
+        },
+        "correct": ["A"],
+        "explanation": "In `amp_viz.py`, `OperatorDtypeRecorder` subclasses `TorchDispatchMode` and implements `__torch_dispatch__(self, func, types, args, kwargs)` to inspect the tensor arguments and outputs of every ATen operation (such as `aten.addmm`, `aten.native_layer_norm`, `aten.relu`) executed inside the `with forward_recorder:` context.",
+        "option_explanations": {
+            "A": "Correct. `TorchDispatchMode` hooks into PyTorch's dispatcher to inspect operator inputs and outputs at runtime.",
+            "B": "Incorrect. It is a pure Python PyTorch dispatch mechanism.",
+            "C": "Incorrect. `amp_viz.py` does not use ONNX.",
+            "D": "Incorrect. `empty_cache()` manages cached GPU memory, not operator dtype recording."
+        },
+        "competency": "Understand how operator dtypes are inspected under autocast in amp_viz.py",
+        "source": "modules/module_9_amp_profiler_benchmarking_etc/amp_viz.py"
+    },
+    {
+        "id": "PTCA-P-066",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C2: Precision & Automatic Mixed Precision (AMP)",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "What happens if an operation inside `with torch.amp.autocast(device_type='cuda', dtype=torch.float16):` receives one `float16` tensor (e.g., from a preceding `nn.Linear`) and one `float32` tensor (e.g., from a residual skip connection or `LayerNorm`) in an elementwise addition `x + residual`?",
+        "code": "with torch.amp.autocast(device_type='cuda', dtype=torch.float16):\n    h = self.linear(x)      # float16 output\n    out = h + x             # float16 + float32",
+        "options": {
+            "A": "PyTorch's standard type promotion rules promote the elementwise addition to the wider type (`float32`), and if `out` is subsequently passed into another `nn.Linear`, `autocast` automatically casts it back to `float16` for that linear layer.",
+            "B": "PyTorch raises a `RuntimeError: expected scalar type Half but found Float` because elementwise addition cannot mix `float16` and `float32`.",
+            "C": "The `float32` tensor is truncated to `int8`.",
+            "D": "The residual connection is silently dropped."
+        },
+        "correct": ["A"],
+        "explanation": "Elementwise addition (`+`) promotes mixed `float16` and `float32` inputs to the wider `float32` dtype without raising an error. When that `float32` result feeds into the next autocast-eligible layer (such as `nn.Linear` or `nn.Conv2d`), `autocast` automatically downcasts it to `float16` again.",
+        "option_explanations": {
+            "A": "Correct. Mixed-dtype elementwise ops promote to `float32`, and subsequent eligible compute layers automatically cast inputs back to `float16` under `autocast`.",
+            "B": "Incorrect. Unlike `nn.Linear` outside `autocast`, elementwise addition promotes `float16 + float32 -> float32` automatically.",
+            "C": "Incorrect. No integer truncation occurs.",
+            "D": "Incorrect. The addition executes normally in `float32`."
+        },
+        "competency": "Trace dtype promotion across residual connections and layers inside autocast",
+        "source": "modules/module_9_amp_profiler_benchmarking_etc/amp_viz.py & 1_amp_basics.ipynb"
+    }
+]
+
+print(f"Loaded {len(questions_c2)} C2 questions.")
+
+questions_c3 = [
+    {
+        "id": "PTCA-P-067",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C3: Benchmarking & Asynchronous GPU Timing",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "Why does the following naive Python `time.time()` code produce an artificially tiny and inaccurate execution time when benchmarking a CUDA GPU operation?",
+        "code": "import time, torch\n\nx = torch.randn(4096, 4096, device=\"cuda\")\nt0 = time.time()\ny = torch.matmul(x, x)\nt1 = time.time()\nprint(f\"Elapsed: {t1 - t0:.6f}s\")",
+        "options": {
+            "A": "CUDA kernel execution is asynchronous; `torch.matmul(x, x)` returns control to the Python CPU thread immediately after enqueuing the kernel on the GPU stream, so `t1 - t0` only measures CPU kernel launch overhead rather than actual GPU computation time.",
+            "B": "`time.time()` automatically resets to `0.0` whenever a CUDA tensor is created.",
+            "C": "`torch.matmul` is lazily evaluated only when `print(y)` is called at the end of the program.",
+            "D": "Python's `time.time()` has a resolution of 1 hour on Linux."
+        },
+        "correct": ["A"],
+        "explanation": "GPU operations in PyTorch are asynchronous by default: the CPU enqueues work into the CUDA stream and immediately proceeds to the next Python line (`t1 = time.time()`) without waiting for the GPU kernel to finish. Without calling `torch.cuda.synchronize()`, the timer only captures CPU launch latency.",
+        "option_explanations": {
+            "A": "Correct. Without GPU synchronization, host wall-clock timers only measure asynchronous kernel launch overhead.",
+            "B": "Incorrect. `time.time()` is unaffected by tensor creation.",
+            "C": "Incorrect. In Eager Mode, `torch.matmul` is enqueued immediately to the GPU stream, not lazily deferred until `print(y)`.",
+            "D": "Incorrect. `time.time()` / `time.perf_counter()` has sub-microsecond resolution."
+        },
+        "competency": "Explain why naive CPU wall-clock timing fails for asynchronous GPU operations",
+        "source": "modules/module_9_amp_profiler_benchmarking_etc/2_benchmarking_basics.ipynb"
+    },
+    {
+        "id": "PTCA-P-068",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C3: Benchmarking & Asynchronous GPU Timing",
+        "difficulty": "Easy",
+        "multi_select": False,
+        "stem": "In `1_amp_basics.ipynb`, how do the `start_timer()` and `end_timer()` functions ensure accurate wall-clock timing of CUDA operations when using `time.time()`?",
+        "code": "def start_timer():\n    gc.collect()\n    time.sleep(0.1)\n    global start_time\n    torch.cuda.synchronize()\n    start_time = time.time()\n\ndef end_timer(function_name=None):\n    torch.cuda.synchronize()\n    end_time = time.time()\n    return end_time - start_time",
+        "options": {
+            "A": "By calling `torch.cuda.synchronize()` both before recording `start_time` (to ensure prior GPU work has finished) and before recording `end_time` (to wait for the benchmarked GPU kernels to complete).",
+            "B": "By copying all tensors to the CPU before calling `time.time()`.",
+            "C": "By calling `gc.collect()`, which automatically blocks all CUDA streams.",
+            "D": "By setting `torch.set_num_threads(0)`."
+        },
+        "correct": ["A"],
+        "explanation": "Calling `torch.cuda.synchronize()` before `start_time = time.time()` ensures no lingering asynchronous GPU kernels from earlier code pollute the measurement, and calling `torch.cuda.synchronize()` before `end_time = time.time()` blocks the CPU until all benchmarked GPU kernels have completed.",
+        "option_explanations": {
+            "A": "Correct. Synchronizing before both the start and end timestamps guarantees accurate wall-clock measurement of GPU execution.",
+            "B": "Incorrect. Copying tensors to CPU would add PCIe transfer overhead to the benchmark.",
+            "C": "Incorrect. Python garbage collection (`gc.collect()`) cleans up Python objects and does not synchronize CUDA streams by itself.",
+            "D": "Incorrect. `set_num_threads` controls CPU thread pools, not CUDA synchronization."
+        },
+        "competency": "Use torch.cuda.synchronize() properly around manual wall-clock timers",
+        "source": "modules/module_9_amp_profiler_benchmarking_etc/1_amp_basics.ipynb"
+    },
+    {
+        "id": "PTCA-P-069",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C3: Benchmarking & Asynchronous GPU Timing",
+        "difficulty": "Easy",
+        "multi_select": True,
+        "stem": "According to `2_benchmarking_basics.ipynb`, which THREE of the following are key advantages of `torch.utils.benchmark.Timer` over Python's built-in `timeit.Timer`? (Select 3)",
+        "code": "import torch.utils.benchmark as benchmark",
+        "options": {
+            "A": "Automatic GPU synchronization (device-aware timing via `torch.cuda.synchronize()`).",
+            "B": "Thread pool control via the `num_threads` parameter (defaulting to 1 thread unless specified).",
+            "C": "Built-in warmup and rich statistical output (mean, median, interquartile range / IQR, and `Compare` tables).",
+            "D": "Automatic conversion of Python functions into distributed multi-node MPI jobs."
+        },
+        "correct": ["A", "B", "C"],
+        "explanation": "As summarized in the comparison table in `2_benchmarking_basics.ipynb`, `torch.utils.benchmark.Timer` improves upon `timeit.Timer` by providing: (1) Device-aware timing with automatic GPU synchronization, (2) explicit thread control (`num_threads`), and (3) automatic warmup plus statistical measurements (mean, median, IQR, and `Compare` formatting).",
+        "option_explanations": {
+            "A": "Correct. `torch.utils.benchmark.Timer` automatically synchronizes CUDA devices.",
+            "B": "Correct. It allows specifying `num_threads` to control PyTorch's intra-op CPU thread pool.",
+            "C": "Correct. It performs warmup runs and computes mean, median, IQR, and comparison tables.",
+            "D": "Incorrect. `Timer` is a benchmarking utility, not a distributed job launcher."
+        },
+        "competency": "Contrast torch.utils.benchmark.Timer with Python's built-in timeit.Timer",
+        "source": "modules/module_9_amp_profiler_benchmarking_etc/2_benchmarking_basics.ipynb"
+    },
+    {
+        "id": "PTCA-P-070",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C3: Benchmarking & Asynchronous GPU Timing",
+        "difficulty": "Easy",
+        "multi_select": False,
+        "stem": "What is the default number of CPU threads used by `torch.utils.benchmark.Timer` if the `num_threads` argument is omitted, and how can you configure it to use all available PyTorch CPU threads?",
+        "code": "import torch\nimport torch.utils.benchmark as benchmark\n\nt0 = benchmark.Timer(\n    stmt='batched_dot_mul_sum(x, x)',\n    setup='from __main__ import batched_dot_mul_sum',\n    globals={'x': x},\n    # num_threads = ?\n)",
+        "options": {
+            "A": "It defaults to `1` thread; pass `num_threads=torch.get_num_threads()` to benchmark with PyTorch's normal multi-threaded CPU configuration.",
+            "B": "It defaults to `64` threads; pass `num_threads=0` to use all cores.",
+            "C": "It defaults to `torch.cuda.device_count()` threads.",
+            "D": "It does not support multi-threading under any setting."
+        },
+        "correct": ["A"],
+        "explanation": "As shown in Step 2 & Step 3 of `2_benchmarking_basics.ipynb`, `torch.utils.benchmark.Timer` uses a single thread (`num_threads=1`) by default for deterministic single-core comparisons. To reflect normal multi-threaded runtime conditions, query `num_threads = torch.get_num_threads()` and pass `num_threads=num_threads` to `Timer`.",
+        "option_explanations": {
+            "A": "Correct. `Timer` defaults to `num_threads=1` and accepts `num_threads=torch.get_num_threads()`.",
+            "B": "Incorrect. The default is `1`, not `64`, and `0` is not used to select all cores.",
+            "C": "Incorrect. `device_count()` counts GPUs, not CPU threads.",
+            "D": "Incorrect. `Timer` explicitly supports multi-threading via `num_threads`."
+        },
+        "competency": "Configure CPU thread count in torch.utils.benchmark.Timer using num_threads and torch.get_num_threads()",
+        "source": "modules/module_9_amp_profiler_benchmarking_etc/2_benchmarking_basics.ipynb"
+    },
+    {
+        "id": "PTCA-P-071",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C3: Benchmarking & Asynchronous GPU Timing",
+        "difficulty": "Easy",
+        "multi_select": False,
+        "stem": "In `torch.utils.benchmark.Timer`, what is the purpose of the `globals` parameter?",
+        "code": "t0 = benchmark.Timer(\n    stmt='batched_dot_mul_sum(x, x)',\n    setup='from __main__ import batched_dot_mul_sum',\n    globals={'x': x},\n)",
+        "options": {
+            "A": "It passes a dictionary of variables (such as input tensor `'x'`) defined outside the `Timer` so that `stmt` can access them during execution.",
+            "B": "It exports the benchmark results into Python's built-in `__builtins__` module.",
+            "C": "It sets environment variables in the operating system shell.",
+            "D": "It broadcasts tensors across multiple machines in a cluster."
+        },
+        "correct": ["A"],
+        "explanation": "As documented in `2_benchmarking_basics.ipynb`, `globals` is a dictionary of global variables used in the benchmark execution scope, allowing `stmt` and `setup` to access tensors or callables constructed outside the `Timer`.",
+        "option_explanations": {
+            "A": "Correct. `globals={'x': x}` injects external objects like tensors into the benchmark's execution namespace.",
+            "B": "Incorrect. It provides input variables to `stmt`, not exports to `__builtins__`.",
+            "C": "Incorrect. It does not modify OS environment variables.",
+            "D": "Incorrect. It is a local Python namespace dictionary."
+        },
+        "competency": "Pass external tensors and functions into torch.utils.benchmark.Timer via globals and setup",
+        "source": "modules/module_9_amp_profiler_benchmarking_etc/2_benchmarking_basics.ipynb"
+    },
+    {
+        "id": "PTCA-P-072",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C3: Benchmarking & Asynchronous GPU Timing",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "How does `t0.blocked_autorange()` differ from `t0.timeit(1000)` on a `torch.utils.benchmark.Timer` instance?",
+        "code": "m_fixed = t0.timeit(1000)\nm_auto = t0.blocked_autorange(min_run_time=1)",
+        "options": {
+            "A": "`timeit(1000)` runs the statement a fixed number of 1000 iterations in a single measurement, whereas `blocked_autorange()` automatically determines the block size $N$ and runs multiple replicate blocks until total run time reaches at least `min_run_time` (default 0.2 seconds), enabling statistical metrics like median and IQR.",
+            "B": "`blocked_autorange()` only works on CPU and disables GPU synchronization.",
+            "C": "`timeit(1000)` runs for 1000 seconds regardless of how fast `stmt` is.",
+            "D": "`blocked_autorange()` deletes the input tensors after running once."
+        },
+        "correct": ["A"],
+        "explanation": "`t0.timeit(N)` executes `stmt` exactly `N` times and returns a single mean measurement. `t0.blocked_autorange(min_run_time=...)` automatically calibrates the number of iterations per block so overhead is negligible and collects multiple block measurements totaling at least `min_run_time` (0.2s by default), reporting mean, median, and interquartile range (IQR).",
+        "option_explanations": {
+            "A": "Correct. `blocked_autorange` automatically chooses iteration counts and collects multiple blocks over `min_run_time` (default 0.2s) for robust statistics.",
+            "B": "Incorrect. `blocked_autorange` synchronizes the GPU just like `timeit`.",
+            "C": "Incorrect. `1000` in `timeit(1000)` is the number of iterations, not seconds.",
+            "D": "Incorrect. Input tensors in `globals` remain intact."
+        },
+        "competency": "Distinguish Timer.timeit(N) from Timer.blocked_autorange()",
+        "source": "modules/module_9_amp_profiler_benchmarking_etc/2_benchmarking_basics.ipynb"
+    },
+    {
+        "id": "PTCA-P-073",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C3: Benchmarking & Asynchronous GPU Timing",
+        "difficulty": "Easy",
+        "multi_select": False,
+        "stem": "What is the default `min_run_time` (in seconds) used by `torch.utils.benchmark.Timer.blocked_autorange()` when no argument is passed?",
+        "code": "m0 = t0.blocked_autorange()",
+        "options": {
+            "A": "0.2 seconds",
+            "B": "60.0 seconds",
+            "C": "0.0001 seconds",
+            "D": "10.0 seconds"
+        },
+        "correct": ["A"],
+        "explanation": "As stated in Step 4 of `2_benchmarking_basics.ipynb`, `blocked_autorange` runs multiple measurements whose times total at least `0.2` seconds by default.",
+        "option_explanations": {
+            "A": "Correct. The default `min_run_time` for `blocked_autorange()` is 0.2 seconds.",
+            "B": "Incorrect. 60 seconds would make interactive benchmarking excessively slow.",
+            "C": "Incorrect. 0.0001 seconds is too short to gather reliable multi-block statistics.",
+            "D": "Incorrect. The default is 0.2 seconds (though users can override it, e.g. `min_run_time=1`)."
+        },
+        "competency": "Recall the default min_run_time of Timer.blocked_autorange()",
+        "source": "modules/module_9_amp_profiler_benchmarking_etc/2_benchmarking_basics.ipynb"
+    },
+    {
+        "id": "PTCA-P-074",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C3: Benchmarking & Asynchronous GPU Timing",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "When passing a list of benchmark measurements `results` to `torch.utils.benchmark.Compare(results)`, how do the `Timer` metadata arguments `label`, `sub_label`, `num_threads`, and `description` organize the printed comparison table?",
+        "code": "results.append(benchmark.Timer(\n    stmt='batched_dot_mul_sum(x, x)',\n    setup='from __main__ import batched_dot_mul_sum',\n    globals={'x': x},\n    num_threads=num_threads,\n    label='Batched dot',\n    sub_label=f'[{b}, {n}]',\n    description='mul/sum',\n).blocked_autorange(min_run_time=1))\n\ncompare = benchmark.Compare(results)\ncompare.print()",
+        "options": {
+            "A": "`label` groups the table, `sub_label` and `num_threads` form the row groupings, and `description` defines the columns being compared (e.g., `'mul/sum'` vs `'bmm'`).",
+            "B": "`description` is the Python code executed, and `label` is the number of GPU streams.",
+            "C": "`Compare` ignores `label`, `sub_label`, and `description` and only prints raw JSON.",
+            "D": "`sub_label` must be an integer specifying the CUDA device ID."
+        },
+        "correct": ["A"],
+        "explanation": "As shown in Step 5 of `2_benchmarking_basics.ipynb` ('`label` and `sub_label` are the rows; `description` is the column'), `benchmark.Compare(results)` uses `label`, `sub_label`, and `num_threads` to group rows and uses `description` as the column headers to compare alternative implementations side-by-side.",
+        "option_explanations": {
+            "A": "Correct. `label`, `sub_label`, and `num_threads` organize the table sections/rows while `description` labels the columns.",
+            "B": "Incorrect. `stmt` is the Python code executed, not `description`.",
+            "C": "Incorrect. `Compare.print()` renders a formatted human-readable table organized by those exact annotations.",
+            "D": "Incorrect. `sub_label` is an arbitrary descriptive string (such as tensor dimensions `'[64, 1024]'`)."
+        },
+        "competency": "Use torch.utils.benchmark.Compare with label, sub_label, and description to format benchmark tables",
+        "source": "modules/module_9_amp_profiler_benchmarking_etc/2_benchmarking_basics.ipynb"
+    },
+    {
+        "id": "PTCA-P-075",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C3: Benchmarking & Asynchronous GPU Timing",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "When using `torch.cuda.Event` objects to measure elapsed execution time on the GPU timeline, which argument MUST be passed when instantiating the `Event` objects?",
+        "code": "start_event = torch.cuda.Event(enable_timing=True)\nend_event = torch.cuda.Event(enable_timing=True)",
+        "options": {
+            "A": "`enable_timing=True`",
+            "B": "`blocking=False`",
+            "C": "`profile_memory=True`",
+            "D": "`autocast=True`"
+        },
+        "correct": ["A"],
+        "explanation": "By default, `torch.cuda.Event()` disables timestamp recording to minimize overhead when events are used purely for inter-stream synchronization. To compute elapsed time via `start_event.elapsed_time(end_event)`, both events must be created with `enable_timing=True`.",
+        "option_explanations": {
+            "A": "Correct. `torch.cuda.Event(enable_timing=True)` enables GPU timestamp recording on the event.",
+            "B": "Incorrect. `blocking` is not the flag that enables `elapsed_time` calculation.",
+            "C": "Incorrect. `profile_memory` is a `torch.profiler.profile` parameter.",
+            "D": "Incorrect. `autocast` is unrelated to `torch.cuda.Event`."
+        },
+        "competency": "Instantiate torch.cuda.Event(enable_timing=True) for GPU timeline measurements",
+        "source": "modules/module_9_amp_profiler_benchmarking_etc/2_benchmarking_basics.ipynb"
+    },
+    {
+        "id": "PTCA-P-076",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C3: Benchmarking & Asynchronous GPU Timing",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "In the CUDA Event timing code from `2_benchmarking_basics.ipynb` below, what unit of time does `start_event.elapsed_time(end_event)` return, and why is it multiplied by `1000.0 / iterations`?",
+        "code": "start_event.record()\nwith torch.cuda.stream(s):\n    for _ in range(iterations):\n        out = batched_dot_bmm(x, x)\nend_event.record()\ns.synchronize()\n\nelapsed_time_us = start_event.elapsed_time(end_event) * 1000.0 / iterations",
+        "options": {
+            "A": "`elapsed_time` returns total elapsed time in **milliseconds (ms)**; multiplying by `1000.0` converts milliseconds to **microseconds (us)**, and dividing by `iterations` computes the average time per call.",
+            "B": "`elapsed_time` returns time in hours; multiplying by `1000.0` converts to seconds.",
+            "C": "`elapsed_time` returns nanoseconds; multiplying by `1000.0` converts to picoseconds.",
+            "D": "`elapsed_time` returns CPU clock cycles."
+        },
+        "correct": ["A"],
+        "explanation": "`start_event.elapsed_time(end_event)` returns a `float` representing the elapsed GPU time between the two events in **milliseconds (ms)**. Multiplying by `1000.0` converts ms to microseconds ($\\mu\\text{s}$), and dividing by `iterations` yields the mean $\\mu\\text{s}$ per iteration.",
+        "option_explanations": {
+            "A": "Correct. `elapsed_time()` returns milliseconds (ms), so `* 1000.0 / iterations` gives microseconds per iteration.",
+            "B": "Incorrect. The return unit is milliseconds, not hours.",
+            "C": "Incorrect. The return unit is milliseconds, not nanoseconds.",
+            "D": "Incorrect. It returns milliseconds measured on the GPU hardware timer."
+        },
+        "competency": "Calculate per-iteration latency using torch.cuda.Event.elapsed_time()",
+        "source": "modules/module_9_amp_profiler_benchmarking_etc/2_benchmarking_basics.ipynb"
+    },
+    {
+        "id": "PTCA-P-077",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C3: Benchmarking & Asynchronous GPU Timing",
+        "difficulty": "Hard",
+        "multi_select": False,
+        "stem": "What happens if you call `start_event.elapsed_time(end_event)` immediately after `end_event.record()` **without** calling `s.synchronize()`, `end_event.synchronize()`, or `torch.cuda.synchronize()` first?",
+        "code": "start_event = torch.cuda.Event(enable_timing=True)\nend_event = torch.cuda.Event(enable_timing=True)\n\nstart_event.record()\nout = torch.matmul(x, x)\nend_event.record()\n# Missing synchronize() here!\nt_ms = start_event.elapsed_time(end_event)",
+        "options": {
+            "A": "Because `end_event.record()` is enqueued asynchronously on the GPU stream and has not yet completed on the GPU when the CPU reaches `elapsed_time`, CUDA raises a `RuntimeError` (`CUDA error: device not ready`) or produces invalid timing.",
+            "B": "`elapsed_time` automatically runs 1000 warmup iterations on the CPU.",
+            "C": "It returns a negative number.",
+            "D": "It converts `out` into a CPU NumPy array."
+        },
+        "correct": ["A"],
+        "explanation": "As emphasized in `2_benchmarking_basics.ipynb`, `end_event.record()` only places a timestamp marker into the asynchronous GPU stream queue. You must synchronize (`s.synchronize()`, `end_event.synchronize()`, or `torch.cuda.synchronize()`) before calling `start_event.elapsed_time(end_event)` so that the GPU has actually reached and recorded `end_event`.",
+        "option_explanations": {
+            "A": "Correct. Querying `elapsed_time` before `end_event` has completed on the GPU raises a CUDA error (`cudaErrorNotReady`) because the end timestamp has not been written yet.",
+            "B": "Incorrect. `elapsed_time` does not run warmup loops.",
+            "C": "Incorrect. Querying an uncompleted event raises a `RuntimeError`.",
+            "D": "Incorrect. `elapsed_time` does not modify tensors."
+        },
+        "competency": "Synchronize CUDA streams/events before querying Event.elapsed_time()",
+        "source": "modules/module_9_amp_profiler_benchmarking_etc/2_benchmarking_basics.ipynb"
+    },
+    {
+        "id": "PTCA-P-078",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C3: Benchmarking & Asynchronous GPU Timing",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "In `2_benchmarking_basics.ipynb`, the relationship between measured per-call time and number of iterations is modeled as:\n$$\\text{measured time per call} = \\frac{\\text{total elapsed time}}{\\text{iterations}} \\approx \\text{kernel\\_compute\\_time} + \\frac{\\text{overhead}}{\\text{iterations}}$$\nWhat does this formula explain about running a GPU benchmark with `iterations = 1` versus `iterations = 1000`?",
+        "code": "for n_iters in [1, 10, 100, 1000]:\n    ...",
+        "options": {
+            "A": "When `iterations = 1`, fixed CPU kernel enqueueing, driver scheduling, and startup overhead make up a large, noisy fraction of the measured time; averaging over `1000` iterations amortizes $\\frac{\\text{overhead}}{\\text{iterations}} \\to 0$ so the measurement converges to true kernel compute cost with much lower variance.",
+            "B": "When `iterations = 1000`, the GPU skips 999 of the matrix multiplications automatically.",
+            "C": "Fixed overhead grows quadratically with `iterations`, so `iterations = 1` is always more accurate than `iterations = 1000`.",
+            "D": "The GPU clock speed is divided by `iterations`."
+        },
+        "correct": ["A"],
+        "explanation": "As demonstrated in the `results_iters` experiment in `2_benchmarking_basics.ipynb`, every GPU kernel launch carries fixed scheduling and startup overhead. With `iterations = 1`, this fixed overhead inflates the mean and causes high standard deviation across trials. As `iterations` increases to `100` or `1000`, the fixed overhead is amortized across calls, and both the mean and standard deviation stabilize.",
+        "option_explanations": {
+            "A": "Correct. Averaging over many iterations amortizes fixed launch/scheduling overhead and shrinks trial-to-trial variance.",
+            "B": "Incorrect. In Eager Mode, all `1000` iterations are enqueued and executed on the GPU.",
+            "C": "Incorrect. Fixed startup overhead per timing block is divided by `iterations`, making larger `iterations` more accurate.",
+            "D": "Incorrect. GPU clock frequency is not divided by the loop count."
+        },
+        "competency": "Explain how running multiple iterations amortizes fixed GPU kernel launch overhead",
+        "source": "modules/module_9_amp_profiler_benchmarking_etc/2_benchmarking_basics.ipynb"
+    },
+    {
+        "id": "PTCA-P-079",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C3: Benchmarking & Asynchronous GPU Timing",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "What is the difference between calling `s.synchronize()` on a specific `torch.cuda.Stream` instance `s` versus calling `torch.cuda.synchronize()`?",
+        "code": "s = torch.cuda.Stream()\nwith torch.cuda.stream(s):\n    out = batched_dot_bmm(x, x)\n\n# Option A:\ns.synchronize()\n# Option B:\ntorch.cuda.synchronize()",
+        "options": {
+            "A": "`s.synchronize()` blocks the host CPU only until all kernels enqueued on stream `s` have completed, whereas `torch.cuda.synchronize()` is a global device synchronization that waits for all streams on the GPU device to finish.",
+            "B": "`s.synchronize()` runs on the CPU, whereas `torch.cuda.synchronize()` deletes all streams on the GPU.",
+            "C": "`s.synchronize()` is asynchronous and returns immediately, whereas `torch.cuda.synchronize()` blocks.",
+            "D": "There is no difference; PyTorch only supports a single CUDA stream per GPU."
+        },
+        "correct": ["A"],
+        "explanation": "As shown in `2_benchmarking_basics.ipynb` (Option A vs Option B), a CUDA stream is an ordered queue of GPU operations. `s.synchronize()` waits specifically for work submitted to stream `s` to finish, while `torch.cuda.synchronize()` waits for all streams across the entire CUDA device.",
+        "option_explanations": {
+            "A": "Correct. `s.synchronize()` synchronizes only stream `s`, whereas `torch.cuda.synchronize()` synchronizes the entire device.",
+            "B": "Incorrect. Neither deletes CUDA streams.",
+            "C": "Incorrect. Both block the calling CPU thread until their respective GPU queues complete.",
+            "D": "Incorrect. PyTorch supports creating multiple independent `torch.cuda.Stream` objects."
+        },
+        "competency": "Differentiate stream-level synchronization (s.synchronize()) from global device synchronization (torch.cuda.synchronize())",
+        "source": "modules/module_9_amp_profiler_benchmarking_etc/2_benchmarking_basics.ipynb"
+    },
+    {
+        "id": "PTCA-P-080",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C3: Benchmarking & Asynchronous GPU Timing",
+        "difficulty": "Easy",
+        "multi_select": False,
+        "stem": "In `2_benchmarking_basics.ipynb`, two implementations of batched dot product (`batched_dot_mul_sum` and `batched_dot_bmm`) are written before benchmarking. Why is `assert batched_dot_mul_sum(x, x).allclose(batched_dot_bmm(x, x))` executed before timing them?",
+        "code": "def batched_dot_mul_sum(a, b):\n    return a.mul(b).sum(-1)\n\ndef batched_dot_bmm(a, b):\n    a = a.reshape(-1, 1, a.shape[-1])\n    b = b.reshape(-1, b.shape[-1], 1)\n    return torch.bmm(a, b).flatten()\n\nx = torch.randn(1000, 64)\nassert batched_dot_mul_sum(x, x).allclose(batched_dot_bmm(x, x))",
+        "options": {
+            "A": "To verify numerical equivalence (within floating-point tolerance) between the candidate implementations before comparing their execution speeds.",
+            "B": "Because `torch.utils.benchmark.Timer` refuses to run unless `assert` was called in the previous line.",
+            "C": "Because `.allclose()` compiles both functions into Triton kernels.",
+            "D": "Because `assert` moves the tensor `x` from CPU to GPU."
+        },
+        "correct": ["A"],
+        "explanation": "Before benchmarking alternative implementations of an algorithm (`a.mul(b).sum(-1)` vs `torch.bmm`), it is essential to assert with `.allclose()` that both functions compute the same mathematical result within floating-point rounding tolerances.",
+        "option_explanations": {
+            "A": "Correct. `.allclose()` validates that both candidate implementations produce numerically equivalent outputs.",
+            "B": "Incorrect. `Timer` does not check for prior `assert` statements.",
+            "C": "Incorrect. `.allclose()` compares tensor values; it does not compile functions.",
+            "D": "Incorrect. `assert` does not change tensor device placement."
+        },
+        "competency": "Verify numerical equivalence with allclose() when benchmarking alternative operator implementations",
+        "source": "modules/module_9_amp_profiler_benchmarking_etc/2_benchmarking_basics.ipynb"
+    },
+    {
+        "id": "PTCA-P-081",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C3: Benchmarking & Asynchronous GPU Timing",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "When timing a custom CUDA stream `s = torch.cuda.Stream()` using `start_event` and `end_event`, how should `start_event.record(s)` and `end_event.record(s)` be recorded so they accurately bracket the work submitted inside `with torch.cuda.stream(s):`?",
+        "code": "s = torch.cuda.Stream()\nstart_event = torch.cuda.Event(enable_timing=True)\nend_event = torch.cuda.Event(enable_timing=True)\n\nwith torch.cuda.stream(s):\n    start_event.record(s)\n    for _ in range(iterations):\n        out = batched_dot_bmm(x, x)\n    end_event.record(s)\ns.synchronize()",
+        "options": {
+            "A": "Record both `start_event` and `end_event` on the target stream `s` (either by passing `s` to `.record(s)` or calling `.record()` inside `with torch.cuda.stream(s):`) so the timestamps are placed directly before and after the kernels in stream `s`'s queue.",
+            "B": "Record `start_event` after `s.synchronize()`.",
+            "C": "Record `end_event` before the `for` loop starts.",
+            "D": "Never call `.record()` on `end_event`."
+        },
+        "correct": ["A"],
+        "explanation": "A CUDA event records the timestamp of the stream it is placed into. Recording `start_event` and `end_event` on stream `s` (or inside `with torch.cuda.stream(s):`) ensures both markers sit in the exact same ordered queue as the kernels being measured.",
+        "option_explanations": {
+            "A": "Correct. Enqueueing the start and end events on stream `s` brackets the exact work executed on that stream.",
+            "B": "Incorrect. Recording `start_event` after synchronization would miss the work entirely.",
+            "C": "Incorrect. Recording `end_event` before the loop would measure zero iterations.",
+            "D": "Incorrect. Both `start_event` and `end_event` must be recorded to compute `elapsed_time`."
+        },
+        "competency": "Record CUDA events properly on non-default CUDA streams",
+        "source": "modules/module_9_amp_profiler_benchmarking_etc/2_benchmarking_basics.ipynb"
+    },
+    {
+        "id": "PTCA-P-082",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C3: Benchmarking & Asynchronous GPU Timing",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "Why is it important to perform warmup iterations (which `torch.utils.benchmark.Timer` does automatically) before recording GPU benchmark timings?",
+        "code": "# Manual warmup before timing:\nfor _ in range(10):\n    _ = model(x)\ntorch.cuda.synchronize()",
+        "options": {
+            "A": "The first few executions incur one-time initialization costs such as CUDA context/cuBLAS workspace allocation, cuDNN autotuning, PyTorch caching allocator block reservation, and JIT compilation (`torch.compile`), which do not reflect steady-state execution speed.",
+            "B": "Warmup iterations permanently delete half of the model's layers.",
+            "C": "Without warmup, PyTorch runs all operations in `torch.int8`.",
+            "D": "GPU memory cannot be read until a tensor has been multiplied at least 50 times."
+        },
+        "correct": ["A"],
+        "explanation": "As noted in `2_benchmarking_basics.ipynb`, initialization tasks (such as CUDA context startup, cuBLAS/cuDNN algorithm selection, caching allocator memory requests from the driver, and JIT compilation) occur on the initial runs. Warmup ensures the timed runs measure steady-state kernel execution.",
+        "option_explanations": {
+            "A": "Correct. Warmup eliminates one-time allocator, library initialization, and JIT compilation overhead from steady-state measurements.",
+            "B": "Incorrect. Warmup does not alter model architecture.",
+            "C": "Incorrect. Warmup does not change tensor dtypes.",
+            "D": "Incorrect. GPU memory is readable immediately; warmup is strictly for timing accuracy."
+        },
+        "competency": "Explain why warmup iterations are essential for accurate GPU benchmarking",
+        "source": "modules/module_9_amp_profiler_benchmarking_etc/2_benchmarking_basics.ipynb"
+    },
+    {
+        "id": "PTCA-P-083",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C3: Benchmarking & Asynchronous GPU Timing",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "What statistical metric reported by `torch.utils.benchmark.Timer.blocked_autorange()` measures the spread between the 25th and 75th percentiles of block measurements and is robust to occasional OS/driver jitter outliers?",
+        "code": "m = timer.blocked_autorange(min_run_time=2.0)\nprint(m)  # Displays Median and IQR",
+        "options": {
+            "A": "Interquartile Range (IQR), reported alongside the median when multiple block runs are collected.",
+            "B": "The maximum single-iteration warmup latency.",
+            "C": "The total number of CUDA cores on the GPU.",
+            "D": "The L1 weight regularization penalty."
+        },
+        "correct": ["A"],
+        "explanation": "As shown in the comparison table in `2_benchmarking_basics.ipynb`, `torch.utils.benchmark.Timer` provides statistical output including Mean, Median, and Interquartile Range (IQR = $Q_3 - Q_1$), which characterizes timing dispersion while being much less sensitive to outliers than standard deviation or min/max.",
+        "option_explanations": {
+            "A": "Correct. IQR measures the middle 50% spread (75th minus 25th percentile) across repeated benchmark blocks.",
+            "B": "Incorrect. Warmup runs are excluded from the reported measurement statistics.",
+            "C": "Incorrect. IQR is a statistical timing dispersion metric, not a hardware core count.",
+            "D": "Incorrect. IQR has nothing to do with L1 weight regularization."
+        },
+        "competency": "Interpret Median and IQR statistics from torch.utils.benchmark.Measurement",
+        "source": "modules/module_9_amp_profiler_benchmarking_etc/2_benchmarking_basics.ipynb"
+    },
+    {
+        "id": "PTCA-P-084",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C3: Benchmarking & Asynchronous GPU Timing",
+        "difficulty": "Easy",
+        "multi_select": False,
+        "stem": "In `2_benchmarking_basics.ipynb`, what is a **CUDA Stream** (`torch.cuda.Stream`)?",
+        "code": "s = torch.cuda.Stream()\nwith torch.cuda.stream(s):\n    out = batched_dot_bmm(x, x)",
+        "options": {
+            "A": "An ordered queue of GPU operations that execute sequentially in the order they were submitted to that stream, while operations submitted to different streams can execute concurrently/overlap.",
+            "B": "A Python generator that streams training data from an HTTP server.",
+            "C": "A CPU thread pool used for `DataLoader` image decoding.",
+            "D": "A file handle for writing JSON trace logs to disk."
+        },
+        "correct": ["A"],
+        "explanation": "As defined in `2_benchmarking_basics.ipynb`: 'A **stream** is an ordered queue of GPU operations; work submitted to different streams can overlap.' Operations within the same stream run in FIFO order, whereas independent streams enable concurrent kernel execution or overlapping data transfers with compute.",
+        "option_explanations": {
+            "A": "Correct. A CUDA stream is an ordered GPU execution queue where different streams can overlap work.",
+            "B": "Incorrect. `torch.cuda.Stream` is a GPU hardware execution queue, not a network data loader.",
+            "C": "Incorrect. CUDA streams manage GPU work, not CPU image decoding threads.",
+            "D": "Incorrect. CUDA streams do not manage disk files."
+        },
+        "competency": "Define CUDA Streams and their execution ordering semantics",
+        "source": "modules/module_9_amp_profiler_benchmarking_etc/2_benchmarking_basics.ipynb"
+    },
+    {
+        "id": "PTCA-P-085",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C3: Benchmarking & Asynchronous GPU Timing",
+        "difficulty": "Hard",
+        "multi_select": False,
+        "stem": "Suppose you are benchmarking the steady-state inference speed of a model compiled with `opt_model = torch.compile(model)` using manual `torch.cuda.Event` timers. Why must you call `opt_model(x)` at least once **before** recording `start_event`?",
+        "code": "opt_model = torch.compile(model)\n# Why is this call before start_event.record() required?\n_ = opt_model(x)\ntorch.cuda.synchronize()\n\nstart_event.record()\nfor _ in range(100):\n    _ = opt_model(x)\nend_event.record()\ntorch.cuda.synchronize()",
+        "options": {
+            "A": "Because `torch.compile` performs lazy JIT compilation (TorchDynamo tracing and TorchInductor Triton kernel compilation) on the first call; omitting the warmup call would include seconds of compilation time inside the benchmarked execution window.",
+            "B": "Because `torch.cuda.Event` cannot be created before `opt_model` is called.",
+            "C": "Because the first call to `opt_model(x)` always returns `None`.",
+            "D": "Because `torch.compile` only compiles the model on the 101st invocation."
+        },
+        "correct": ["A"],
+        "explanation": "When benchmarking `torch.compile`, the first invocation triggers TorchDynamo graph capture and TorchInductor compilation. Running at least one warmup call followed by `torch.cuda.synchronize()` before starting the timer isolates steady-state compiled kernel performance from one-time JIT compilation latency.",
+        "option_explanations": {
+            "A": "Correct. Warmup separates one-time JIT compilation latency from steady-state compiled inference speed.",
+            "B": "Incorrect. `torch.cuda.Event` can be instantiated at any time.",
+            "C": "Incorrect. The first call returns the valid model output tensor.",
+            "D": "Incorrect. Compilation happens on the very first invocation."
+        },
+        "competency": "Benchmark torch.compile models accurately by separating warmup compilation from timed runs",
+        "source": "modules/module_7_basics_of_compiler/compiler.ipynb & modules/module_9_amp_profiler_benchmarking_etc/2_benchmarking_basics.ipynb"
+    },
+    {
+        "id": "PTCA-P-086",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C3: Benchmarking & Asynchronous GPU Timing",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "Look at the two `benchmark.Timer` definitions below. In `t_bad`, `torch.randn(1000, 1000, device='cuda')` is placed inside `stmt`, whereas in `t_good` it is passed via `globals`. Why is `t_good` preferred when benchmarking `batched_dot_bmm`?",
+        "code": "t_bad = benchmark.Timer(\n    stmt='x = torch.randn(1000, 1000, device=\"cuda\"); batched_dot_bmm(x, x)',\n    setup='from __main__ import batched_dot_bmm'\n)\n\nt_good = benchmark.Timer(\n    stmt='batched_dot_bmm(x, x)',\n    setup='from __main__ import batched_dot_bmm',\n    globals={'x': torch.randn(1000, 1000, device='cuda')}\n)",
+        "options": {
+            "A": "Placing `torch.randn(...)` inside `stmt` measures random number generation and memory allocation overhead on every single iteration alongside `batched_dot_bmm`, whereas allocating `x` once in `globals` (or `setup`) isolates the execution time of `batched_dot_bmm`.",
+            "B": "`torch.randn` is forbidden inside `stmt` and raises a `SyntaxError`.",
+            "C": "`t_bad` runs on CPU while `t_good` runs on GPU.",
+            "D": "`globals` automatically converts `x` to `torch.int8`."
+        },
+        "correct": ["A"],
+        "explanation": "Everything inside `stmt` is timed on every iteration of the benchmark loop. Allocating and filling a $1000 \\times 1000$ random tensor inside `stmt` pollutes the timing of `batched_dot_bmm` with RNG kernel and allocator latency. Pre-allocating inputs in `globals` or `setup` ensures only the target operation is timed.",
+        "option_explanations": {
+            "A": "Correct. Pre-allocating input tensors in `globals` or `setup` prevents tensor creation and RNG time from contaminating the benchmark.",
+            "B": "Incorrect. `stmt` accepts any valid Python statement, though including allocation distorts the measurement.",
+            "C": "Incorrect. Both specify `device='cuda'`.",
+            "D": "Incorrect. `globals` preserves the exact tensor passed to it."
+        },
+        "competency": "Isolate target operations from setup/allocation overhead in torch.utils.benchmark.Timer",
+        "source": "modules/module_9_amp_profiler_benchmarking_etc/2_benchmarking_basics.ipynb"
+    },
+    {
+        "id": "PTCA-P-087",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C3: Benchmarking & Asynchronous GPU Timing",
+        "difficulty": "Easy",
+        "multi_select": False,
+        "stem": "In `2_benchmarking_basics.ipynb`, how does `batched_dot_bmm(a, b)` reshape two 2D tensors `a` and `b` of shape `(B, N)` so that `torch.bmm` computes the batched dot product for each row?",
+        "code": "def batched_dot_bmm(a, b):\n    '''Computes batched dot by reducing to bmm'''\n    a = a.reshape(-1, 1, a.shape[-1])\n    b = b.reshape(-1, b.shape[-1], 1)\n    return torch.bmm(a, b).flatten()",
+        "options": {
+            "A": "It reshapes `a` to 3D shape `(B, 1, N)` and `b` to 3D shape `(B, N, 1)`, so `torch.bmm(a, b)` computes a `(B, 1, 1)` batch of inner products before `.flatten()` returns a 1D tensor of length `B`.",
+            "B": "It reshapes both `a` and `b` to 1D tensors of shape `(B * N,)` because `torch.bmm` only accepts 1D vectors.",
+            "C": "It reshapes `a` and `b` to 4D tensors `(B, B, N, N)`.",
+            "D": "It transposes `a` to `(N, B)` and calls `torch.mm(a, b)`."
+        },
+        "correct": ["A"],
+        "explanation": "`torch.bmm` performs batched matrix multiplication on 3D tensors of shapes `(B, n, m)` and `(B, m, p)` to produce `(B, n, p)`. Reshaping `a` to `(B, 1, N)` and `b` to `(B, N, 1)` yields `(B, 1, 1)` containing the dot product of each pair of rows, which `.flatten()` turns into shape `(B,)`.",
+        "option_explanations": {
+            "A": "Correct. `(B, 1, N) @ (B, N, 1) -> (B, 1, 1)`, which flattens to `(B,)`.",
+            "B": "Incorrect. `torch.bmm` requires 3D input tensors.",
+            "C": "Incorrect. `torch.bmm` does not accept 4D tensors.",
+            "D": "Incorrect. `torch.mm` computes a full `(B, B)` or `(N, N)` matrix product, doing $O(B^2 N)$ work instead of $O(B N)$."
+        },
+        "competency": "Formulate 3D tensor shapes for batched matrix multiplication (torch.bmm)",
+        "source": "modules/module_9_amp_profiler_benchmarking_etc/2_benchmarking_basics.ipynb"
+    },
+    {
+        "id": "PTCA-P-088",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C3: Benchmarking & Asynchronous GPU Timing",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "If you set the environment variable `CUDA_LAUNCH_BLOCKING=1` before running a PyTorch script, what effect does it have on GPU execution and benchmarking?",
+        "code": "# CUDA_LAUNCH_BLOCKING=1 python script.py",
+        "options": {
+            "A": "It forces every CUDA kernel launch to be synchronous (blocking the CPU until each kernel finishes), which helps pinpoint the exact Python line of a GPU error stack trace but disables asynchronous CPU-GPU pipelining and adds significant overhead.",
+            "B": "It prevents any CUDA kernels from launching and forces fallback to CPU.",
+            "C": "It doubles the memory bandwidth of the GPU.",
+            "D": "It automatically enables `torch.compile` on all functions."
+        },
+        "correct": ["A"],
+        "explanation": "`CUDA_LAUNCH_BLOCKING=1` disables asynchronous kernel launches so the CPU waits for every single GPU kernel to complete before returning from the launch call. While invaluable for debugging asynchronous CUDA errors, it prevents the CPU from running ahead to queue subsequent kernels, artificially slowing down real workloads.",
+        "option_explanations": {
+            "A": "Correct. `CUDA_LAUNCH_BLOCKING=1` serializes CPU launch and GPU execution, aiding debugging at the cost of pipelining performance.",
+            "B": "Incorrect. Kernels still execute on the GPU, just synchronously.",
+            "C": "Incorrect. It reduces throughput by eliminating CPU-GPU overlap.",
+            "D": "Incorrect. It is a CUDA runtime debugging variable, unrelated to `torch.compile`."
+        },
+        "competency": "Understand the impact of CUDA_LAUNCH_BLOCKING=1 on asynchronous execution and timing",
+        "source": "modules/module_9_amp_profiler_benchmarking_etc/2_benchmarking_basics.ipynb & LFD2003"
+    },
+    {
+        "id": "PTCA-P-089",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C3: Benchmarking & Asynchronous GPU Timing",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "In `1_amp_basics.ipynb`, how is peak memory queried when `device_type == 'mps'` (Apple Silicon Metal Performance Shaders) versus `device_type == 'cuda'`?",
+        "code": "def peak_memory():\n    if device_type == 'cuda':\n        return torch.cuda.max_memory_allocated()\n    elif device_type == 'xpu':\n        return torch.xpu.max_memory_allocated()\n    elif device_type == 'mps':\n        return # <MPS MEMORY CALLS>",
+        "options": {
+            "A": "`torch.mps.current_allocated_memory(), torch.mps.driver_allocated_memory()`",
+            "B": "`torch.cuda.max_memory_allocated('mps')`",
+            "C": "`torch.cpu.max_memory()`",
+            "D": "`torch.mps.synchronize()`"
+        },
+        "correct": ["A"],
+        "explanation": "As shown in `peak_memory()` in `1_amp_basics.ipynb`, on `'mps'` devices PyTorch provides `torch.mps.current_allocated_memory()` and `torch.mps.driver_allocated_memory()` to inspect memory usage.",
+        "option_explanations": {
+            "A": "Correct. `1_amp_basics.ipynb` returns `torch.mps.current_allocated_memory(), torch.mps.driver_allocated_memory()` for MPS.",
+            "B": "Incorrect. `torch.cuda` functions only query NVIDIA/ROCm CUDA devices, not Apple MPS.",
+            "C": "Incorrect. `torch.cpu.max_memory()` does not exist.",
+            "D": "Incorrect. `synchronize()` waits for command buffers to complete and does not return memory usage."
+        },
+        "competency": "Query device memory usage across CUDA, XPU, and MPS backends",
+        "source": "modules/module_9_amp_profiler_benchmarking_etc/1_amp_basics.ipynb"
+    },
+    {
+        "id": "PTCA-P-090",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C3: Benchmarking & Asynchronous GPU Timing",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "In `2_benchmarking_basics.ipynb`, what additional utility module inside `torch.utils.benchmark` is mentioned for generating randomized tensors and shapes to benchmark operators across diverse input configurations?",
+        "code": "import torch.utils.benchmark as benchmark",
+        "options": {
+            "A": "`torch.utils.benchmark.Fuzzer` (`FuzzedParameter`, `FuzzedTensor`)",
+            "B": "`torch.utils.benchmark.GradScaler`",
+            "C": "`torch.utils.benchmark.DistributedDataParallel`",
+            "D": "`torch.utils.benchmark.AutogradEngine`"
+        },
+        "correct": ["A"],
+        "explanation": "As noted in the Conclusion of `2_benchmarking_basics.ipynb`, `torch.utils.benchmark` includes additional utilities such as `fuzzer` (`torch.utils.benchmark.Fuzzer`) for generating randomized test cases (shapes, strides, dtypes) when benchmarking operations.",
+        "option_explanations": {
+            "A": "Correct. `torch.utils.benchmark.Fuzzer` generates randomized tensors and parameters for comprehensive performance testing.",
+            "B": "Incorrect. `GradScaler` belongs to `torch.amp`.",
+            "C": "Incorrect. `DistributedDataParallel` belongs to `torch.nn.parallel`.",
+            "D": "Incorrect. `AutogradEngine` is not a `torch.utils.benchmark` utility."
+        },
+        "competency": "Identify torch.utils.benchmark utilities including Timer, Compare, and Fuzzer",
+        "source": "modules/module_9_amp_profiler_benchmarking_etc/2_benchmarking_basics.ipynb"
+    }
+]
+
+print(f"Loaded {len(questions_c3)} C3 questions.")
+
+questions_c4 = [
+    {
+        "id": "PTCA-P-091",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C4: PyTorch Profiler & Bottleneck Analysis",
+        "difficulty": "Easy",
+        "multi_select": True,
+        "stem": "Which THREE classes/functions are imported from `torch.profiler` in `3_profiling.ipynb` to set up basic CPU and GPU profiling with labeled code regions? (Select 3)",
+        "code": "from torch.profiler import # <THREE IMPORTS>",
+        "options": {
+            "A": "`profile`",
+            "B": "`record_function`",
+            "C": "`ProfilerActivity`",
+            "D": "`GradScaler`"
+        },
+        "correct": ["A", "B", "C"],
+        "explanation": "As shown in Step 2 of `3_profiling.ipynb` (`from torch.profiler import profile, record_function, ProfilerActivity`), `profile` provides the profiler context manager, `record_function` labels custom user code blocks, and `ProfilerActivity` specifies the target hardware activities (`CPU`, `CUDA`, `XPU`).",
+        "option_explanations": {
+            "A": "Correct. `profile` is the context manager that wraps the code to be analyzed.",
+            "B": "Correct. `record_function` labels custom code sections (e.g., `\"model_inference\"`) in the profiler report.",
+            "C": "Correct. `ProfilerActivity` enumerates hardware targets (`ProfilerActivity.CPU`, `ProfilerActivity.CUDA`, `ProfilerActivity.XPU`).",
+            "D": "Incorrect. `GradScaler` belongs to `torch.amp`, not `torch.profiler`."
+        },
+        "competency": "Import and use core torch.profiler components (profile, record_function, ProfilerActivity)",
+        "source": "modules/module_9_amp_profiler_benchmarking_etc/3_profiling.ipynb"
+    },
+    {
+        "id": "PTCA-P-092",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C4: PyTorch Profiler & Bottleneck Analysis",
+        "difficulty": "Easy",
+        "multi_select": False,
+        "stem": "In `torch.profiler`, what is the difference between an operator's **Self Time** (`Self CPU` / `Self CUDA`) and its **Total Time** (`CPU total` / `CUDA total`)?",
+        "code": "print(prof.key_averages().table(sort_by=\"cpu_time_total\", row_limit=10))",
+        "options": {
+            "A": "**Self Time** is the time spent executing inside the operation itself excluding any child sub-operations it calls, whereas **Total Time** includes the time spent in the operation plus all of its child operations.",
+            "B": "**Self Time** measures GPU time, whereas **Total Time** measures CPU time.",
+            "C": "**Self Time** is measured in hours, whereas **Total Time** is measured in nanoseconds.",
+            "D": "**Self Time** includes `DataLoader` disk I/O, whereas **Total Time** excludes it."
+        },
+        "correct": ["A"],
+        "explanation": "As defined in `3_profiling.ipynb`: **Self Time** is the time spent in the operation itself (excluding children), while **Total Time** is the time including all child operations invoked by that operator (for example, `aten::linear` calls child `aten::addmm`, so `aten::linear` has high Total Time but near-zero Self Time).",
+        "option_explanations": {
+            "A": "Correct. Self Time excludes child operator calls; Total Time includes the operator and all nested child calls.",
+            "B": "Incorrect. Both CPU and CUDA metrics have separate Self and Total columns.",
+            "C": "Incorrect. Both use appropriate time units (us/ms/s) in the table.",
+            "D": "Incorrect. The distinction is strictly parent-only vs parent-plus-children execution time."
+        },
+        "competency": "Distinguish Self Time from Total Time in PyTorch Profiler tables",
+        "source": "modules/module_9_amp_profiler_benchmarking_etc/3_profiling.ipynb"
+    },
+    {
+        "id": "PTCA-P-093",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C4: PyTorch Profiler & Bottleneck Analysis",
+        "difficulty": "Easy",
+        "multi_select": False,
+        "stem": "In the profiling snippet below, what is the purpose of `with record_function(\"model_inference\"):` and `record_shapes=True`?",
+        "code": "from torch.profiler import profile, record_function, ProfilerActivity\n\nwith profile(activities=[ProfilerActivity.CPU], record_shapes=True) as prof:\n    with record_function(\"model_inference\"):\n        model(dummy_input)",
+        "options": {
+            "A": "`record_function(\"model_inference\")` creates a named user annotation row/span in the profiler output encompassing `model(dummy_input)`, and `record_shapes=True` records the input tensor dimensions for each operator.",
+            "B": "`record_function` saves the model weights to a file named `model_inference.pt`.",
+            "C": "`record_shapes=True` reshapes `dummy_input` to `(1, 1, 1, 1)`.",
+            "D": "`record_function` compiles `model` using TorchInductor."
+        },
+        "correct": ["A"],
+        "explanation": "`record_function(\"model_inference\")` wraps an arbitrary code block with a custom label so you can see the aggregate time/memory of that logical stage in the profiler table and timeline trace. `record_shapes=True` instructs the profiler to capture the shapes of input tensors passed to each operator.",
+        "option_explanations": {
+            "A": "Correct. `record_function` labels custom code regions and `record_shapes=True` logs operator input shapes.",
+            "B": "Incorrect. `record_function` does not save model checkpoints.",
+            "C": "Incorrect. `record_shapes=True` only observes and logs shapes without mutating tensors.",
+            "D": "Incorrect. `record_function` is a profiling annotation, not a compiler."
+        },
+        "competency": "Label custom code sections with record_function and capture input dimensions with record_shapes=True",
+        "source": "modules/module_9_amp_profiler_benchmarking_etc/3_profiling.ipynb"
+    },
+    {
+        "id": "PTCA-P-094",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C4: PyTorch Profiler & Bottleneck Analysis",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "In `3_profiling.ipynb`, how do you configure `torch.profiler.profile` to track tensor memory allocations and print the top 10 operators sorted by self memory usage on a `'cuda'` device?",
+        "code": "with profile(\n    activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA],\n    profile_memory=True,\n    record_shapes=True\n) as prof:\n    model(dummy_input.to('cuda'))\n\n# Print top 10 by self cuda memory usage:",
+        "options": {
+            "A": "`print(prof.key_averages().table(sort_by=\"self_cuda_memory_usage\", row_limit=10))`",
+            "B": "`print(prof.export_chrome_trace(\"memory.json\"))`",
+            "C": "`print(torch.cuda.synchronize(row_limit=10))`",
+            "D": "`print(prof.table(sort_by=\"num_threads\"))`"
+        },
+        "correct": ["A"],
+        "explanation": "As shown in Step 4 of `3_profiling.ipynb`, passing `profile_memory=True` to `profile(...)` enables memory allocation tracking, and calling `prof.key_averages().table(sort_by=\"self_cuda_memory_usage\", row_limit=10)` (or `f\"self_{device}_memory_usage\"`) prints the top 10 memory-allocating operators.",
+        "option_explanations": {
+            "A": "Correct. `profile_memory=True` combined with `sort_by=\"self_cuda_memory_usage\"` and `row_limit=10` displays the top GPU memory allocators.",
+            "B": "Incorrect. `export_chrome_trace` writes a JSON timeline file and returns `None`.",
+            "C": "Incorrect. `torch.cuda.synchronize` does not accept `row_limit` or print profiler tables.",
+            "D": "Incorrect. `prof` requires `.key_averages().table(...)` and `num_threads` is not a memory sort key."
+        },
+        "competency": "Profile operator memory consumption using profile_memory=True and sort_by='self_cuda_memory_usage'",
+        "source": "modules/module_9_amp_profiler_benchmarking_etc/3_profiling.ipynb"
+    },
+    {
+        "id": "PTCA-P-095",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C4: PyTorch Profiler & Bottleneck Analysis",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "When sorting a memory profile table by `self_cpu_memory_usage` or `self_cuda_memory_usage`, why does `aten::empty` typically appear at the very top of the `Self Memory` column while `aten::conv2d` or `aten::linear` has near-zero `Self Memory` but large total `Memory`?",
+        "code": "# Top row when sorted by self_cpu_memory_usage:\n# Name          Self CPU Mem    CPU Mem\n# aten::empty      94.50 Mb     94.50 Mb\n# aten::conv2d      0.00 b      72.10 Mb",
+        "options": {
+            "A": "High-level operators like `aten::conv2d` and `aten::linear` delegate the actual allocation of their output buffers to low-level child calls like `aten::empty` (`aten::empty_strided`); therefore, the allocation is attributed to `aten::empty`'s **Self** memory and to `aten::conv2d`'s **Total** memory.",
+            "B": "`aten::empty` is a memory leak bug in PyTorch that allocates unused tensors.",
+            "C": "`aten::conv2d` runs in-place without using any output memory.",
+            "D": "`aten::empty` deletes all weights of the model after inference."
+        },
+        "correct": ["A"],
+        "explanation": "As noted in Step 4 of `3_profiling.ipynb`: 'Memory profiling shows that operations like `aten::empty` typically allocate the most memory, while convolutions and batch normalization operations manage significant memory volumes.' High-level layers call `aten::empty` under the hood to allocate output tensors, so `aten::empty` accrues the `Self Memory` while the parent convolution/linear op accrues the total `Memory`.",
+        "option_explanations": {
+            "A": "Correct. Child allocation primitives like `aten::empty` perform the actual memory reservation on behalf of parent layers like `aten::conv2d`.",
+            "B": "Incorrect. `aten::empty` is the standard ATen tensor allocation primitive, not a memory leak.",
+            "C": "Incorrect. `aten::conv2d` allocates new output activation tensors (via child calls).",
+            "D": "Incorrect. `aten::empty` allocates uninitialized tensor storage; it does not delete weights."
+        },
+        "competency": "Interpret aten::empty Self Memory vs high-level operator Total Memory in profiler outputs",
+        "source": "modules/module_9_amp_profiler_benchmarking_etc/3_profiling.ipynb"
+    },
+    {
+        "id": "PTCA-P-096",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C4: PyTorch Profiler & Bottleneck Analysis",
+        "difficulty": "Easy",
+        "multi_select": False,
+        "stem": "Which method on the `profile` context manager object exports a detailed execution timeline trace to a JSON file that can be viewed in Chrome's built-in trace viewer (`chrome://tracing`) or Perfetto UI?",
+        "code": "with profile(activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA]) as prof:\n    model(dummy_input.to(device))\n\n# Export timeline trace to detailed_trace.json:",
+        "options": {
+            "A": "`prof.export_chrome_trace(\"detailed_trace.json\")`",
+            "B": "`prof.save_pretrained(\"detailed_trace.json\")`",
+            "C": "`torch.save(prof, \"detailed_trace.json\")`",
+            "D": "`prof.key_averages().to_json(\"detailed_trace.json\")`"
+        },
+        "correct": ["A"],
+        "explanation": "As shown in `3_profiling.ipynb`, `prof.export_chrome_trace(\"detailed_trace.json\")` writes the recorded CPU and GPU execution timeline to a Chrome Trace JSON file, which can be inspected visually by opening `chrome://tracing` in a Chromium browser (or `ui.perfetto.dev`).",
+        "option_explanations": {
+            "A": "Correct. `prof.export_chrome_trace(\"detailed_trace.json\")` exports the timeline trace in Chrome JSON format.",
+            "B": "Incorrect. `save_pretrained` is a HuggingFace method, not a PyTorch profiler method.",
+            "C": "Incorrect. `torch.save` pickles tensors/dicts rather than exporting a Chrome trace JSON.",
+            "D": "Incorrect. `key_averages()` does not have a `.to_json()` Chrome trace exporter."
+        },
+        "competency": "Export timeline traces using prof.export_chrome_trace() for visual analysis",
+        "source": "modules/module_9_amp_profiler_benchmarking_etc/3_profiling.ipynb"
+    },
+    {
+        "id": "PTCA-P-097",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C4: PyTorch Profiler & Bottleneck Analysis",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "According to `3_profiling.ipynb`, which hardware activities are supported directly by `torch.profiler.ProfilerActivity`, and which separate profiler module should be used on Apple Silicon (`mps`) devices?",
+        "code": "from torch.profiler import ProfilerActivity",
+        "options": {
+            "A": "`ProfilerActivity` supports `CPU`, `CUDA`, and `XPU`; for Apple Silicon MPS devices, use `torch.mps.profiler`.",
+            "B": "`ProfilerActivity` only supports `TPU`; for CUDA devices, use `torch.cpu.profiler`.",
+            "C": "`ProfilerActivity.MPS` is the only activity supported in `torch.profiler`.",
+            "D": "PyTorch does not support profiling on any GPU."
+        },
+        "correct": ["A"],
+        "explanation": "As shown in Step 3 of `3_profiling.ipynb`, `ProfilerActivity` provides `ProfilerActivity.CPU`, `ProfilerActivity.CUDA`, and `ProfilerActivity.XPU`. For Apple Silicon (`mps`), the notebook notes: 'Currently only CUDA or XPU is supported. For MPS, see `torch.mps.profiler`.'",
+        "option_explanations": {
+            "A": "Correct. `ProfilerActivity` supports `CPU`, `CUDA`, and `XPU`, while MPS profiling is provided via `torch.mps.profiler`.",
+            "B": "Incorrect. `ProfilerActivity` directly supports `CPU`, `CUDA`, and `XPU`.",
+            "C": "Incorrect. `ProfilerActivity` does not use `ProfilerActivity.MPS`; MPS uses `torch.mps.profiler`.",
+            "D": "Incorrect. GPU profiling is a core feature of `torch.profiler`."
+        },
+        "competency": "Select appropriate ProfilerActivity targets across CPU, CUDA, XPU, and MPS",
+        "source": "modules/module_9_amp_profiler_benchmarking_etc/3_profiling.ipynb"
+    },
+    {
+        "id": "PTCA-P-098",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C4: PyTorch Profiler & Bottleneck Analysis",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "When profiling a long-running training loop of thousands of iterations, why should you use `torch.profiler.schedule(wait=..., warmup=..., active=..., repeat=...)` instead of profiling every single step?",
+        "code": "from torch.profiler import profile, schedule, ProfilerActivity\n\nmy_schedule = schedule(wait=2, warmup=2, active=3, repeat=1)\nwith profile(activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA], schedule=my_schedule) as prof:\n    for step, batch in enumerate(loader):\n        train_step(batch)\n        prof.step()",
+        "options": {
+            "A": "Continuous profiling across thousands of steps adds runtime overhead and produces massive, unmanageable trace files; `schedule` skips `wait` steps, warms up the profiler for `warmup` steps, records only `active` representative steps, and demarcates iterations via `prof.step()`.",
+            "B": "`schedule` automatically adjusts the optimizer learning rate like `StepLR`.",
+            "C": "`schedule` is required to enable `loss.backward()`.",
+            "D": "`prof.step()` updates the model weights in place of `optimizer.step()`."
+        },
+        "correct": ["A"],
+        "explanation": "As stated in `3_profiling.ipynb` ('Always profile representative workloads and use scheduling for long-running training jobs to minimize overhead while gathering actionable performance insights'), `torch.profiler.schedule` controls when the profiler is idle (`wait`), warming up (`warmup`), and actively recording (`active`), while `prof.step()` notifies the profiler at the end of each training iteration.",
+        "option_explanations": {
+            "A": "Correct. Profiling schedules limit overhead and trace file size by capturing a small window of representative steady-state steps.",
+            "B": "Incorrect. `torch.profiler.schedule` controls profiler trace collection, not learning rates.",
+            "C": "Incorrect. `loss.backward()` does not require a profiler.",
+            "D": "Incorrect. `prof.step()` advances the profiler's step counter; `optimizer.step()` updates model parameters."
+        },
+        "competency": "Configure torch.profiler.schedule and prof.step() for multi-step training loops",
+        "source": "modules/module_9_amp_profiler_benchmarking_etc/3_profiling.ipynb"
+    },
+    {
+        "id": "PTCA-P-099",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C4: PyTorch Profiler & Bottleneck Analysis",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "With `schedule(wait=2, warmup=1, active=3, repeat=1)`, during which 0-indexed training steps (`step = 0, 1, 2, 3, 4, 5, ...`) does the profiler actually record events into the final trace?",
+        "code": "my_schedule = torch.profiler.schedule(wait=2, warmup=1, active=3, repeat=1)\nwith profile(schedule=my_schedule) as prof:\n    for step in range(10):\n        run_step()\n        prof.step()",
+        "options": {
+            "A": "Steps `0` and `1` are skipped (`wait=2`), step `2` traces warmup overhead (`warmup=1`, discarded), and steps `3, 4, 5` are recorded (`active=3`).",
+            "B": "Steps `0, 1, 2` are recorded, and steps `3, 4, 5` are skipped.",
+            "C": "Every step from `0` to `9` is recorded.",
+            "D": "Only step `0` is recorded."
+        },
+        "correct": ["A"],
+        "explanation": "In a cycle of `schedule(wait=2, warmup=1, active=3, repeat=1)`:\n- Steps 0, 1 (2 steps): `ProfilerAction.NONE` (`wait=2`)\n- Step 2 (1 step): `ProfilerAction.WARMUP` (`warmup=1`)\n- Steps 3, 4, 5 (3 steps): `ProfilerAction.RECORD` / `RECORD_AND_SAVE` (`active=3`)\nBecause `repeat=1`, all subsequent steps after step 5 are ignored.",
+        "option_explanations": {
+            "A": "Correct. 2 wait steps (0, 1) + 1 warmup step (2) + 3 active recorded steps (3, 4, 5).",
+            "B": "Incorrect. The cycle starts with `wait`, then `warmup`, then `active`.",
+            "C": "Incorrect. Only the `active` steps are saved.",
+            "D": "Incorrect. Step 0 is part of the `wait` phase."
+        },
+        "competency": "Trace wait, warmup, active, and repeat phases of torch.profiler.schedule",
+        "source": "modules/module_9_amp_profiler_benchmarking_etc/3_profiling.ipynb"
+    },
+    {
+        "id": "PTCA-P-100",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C4: PyTorch Profiler & Bottleneck Analysis",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "When inspecting a Chrome trace (`detailed_trace.json`) or profiler table for a GPU training loop, which symptom indicates a **CPU data-loading bottleneck**?",
+        "code": "for batch in train_loader:\n    inputs, targets = batch[0].to('cuda'), batch[1].to('cuda')\n    out = model(inputs)",
+        "options": {
+            "A": "Large idle gaps on the GPU stream timeline between training steps while the CPU timeline spends significant time inside `enumerate(DataLoader)#_MultiProcessingDataLoaderIter.__next__`.",
+            "B": "The GPU stream is 100% packed with back-to-back `aten::mm` and `aten::conv2d` kernels with zero idle gaps.",
+            "C": "`aten::empty` has non-zero self memory usage.",
+            "D": "The model accuracy increases each epoch."
+        },
+        "correct": ["A"],
+        "explanation": "If the GPU sits idle waiting for the next batch to arrive from `DataLoader`, the Chrome trace timeline shows long empty gaps between GPU kernel bursts coinciding with long CPU `DataLoader.__next__` spans. Increasing `num_workers`, enabling `pin_memory=True`, or optimizing dataset preprocessing resolves this bottleneck.",
+        "option_explanations": {
+            "A": "Correct. Idle GPU timeline gaps paired with long CPU `DataLoader` spans are the classic signature of a data-loading bottleneck.",
+            "B": "Incorrect. 100% GPU kernel occupancy indicates a healthy compute-bound pipeline, not a data-loading stall.",
+            "C": "Incorrect. `aten::empty` allocating memory is normal for any PyTorch model.",
+            "D": "Incorrect. Increasing accuracy is normal training progress."
+        },
+        "competency": "Diagnose CPU DataLoader bottlenecks from PyTorch Profiler tables and Chrome traces",
+        "source": "modules/module_9_amp_profiler_benchmarking_etc/3_profiling.ipynb"
+    },
+    {
+        "id": "PTCA-P-101",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C4: PyTorch Profiler & Bottleneck Analysis",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "When `record_shapes=True` is enabled in `torch.profiler.profile`, how can you group the summary table rows so that calls to the same operator with **different input tensor shapes** (e.g., `aten::conv2d` with `(1, 3, 224, 224)` vs `(1, 64, 56, 56)`) are listed as separate rows instead of merged into one?",
+        "code": "with profile(activities=[ProfilerActivity.CPU], record_shapes=True) as prof:\n    model(dummy_input)\n\n# Group averages by input shape:",
+        "options": {
+            "A": "`prof.key_averages(group_by_input_shape=True).table(sort_by=\"cpu_time_total\", row_limit=10)`",
+            "B": "`prof.key_averages(group_by_input_shape=False).table()`",
+            "C": "`prof.export_chrome_trace()`",
+            "D": "`prof.step()`"
+        },
+        "correct": ["A"],
+        "explanation": "By default, `prof.key_averages()` aggregates all invocations of an operator name (e.g., all `aten::conv2d` layers) into a single row. Passing `group_by_input_shape=True` to `prof.key_averages(group_by_input_shape=True)` (when `record_shapes=True` was set) breaks down each operator by its specific input tensor dimensions.",
+        "option_explanations": {
+            "A": "Correct. `prof.key_averages(group_by_input_shape=True)` separates operator statistics by distinct input tensor shapes.",
+            "B": "Incorrect. `group_by_input_shape=False` is the default that merges all shapes of the same op.",
+            "C": "Incorrect. `export_chrome_trace` exports a timeline file, not a grouped summary table.",
+            "D": "Incorrect. `prof.step()` advances the profiler schedule."
+        },
+        "competency": "Group profiler key_averages by input tensor shape using group_by_input_shape=True",
+        "source": "modules/module_9_amp_profiler_benchmarking_etc/3_profiling.ipynb & torch.profiler docs"
+    },
+    {
+        "id": "PTCA-P-102",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C4: PyTorch Profiler & Bottleneck Analysis",
+        "difficulty": "Easy",
+        "multi_select": False,
+        "stem": "In `3_profiling.ipynb`, why is `model(dummy_input.to(device))` executed once **before** or outside the final timed `with profile(...)` block when profiling on GPU?",
+        "code": "device_model = model.to(device)\n# Warmup or initial run before profiling:\nwith profile(activities=activities, record_shapes=True) as prof:\n    device_model(dummy_input.to(device))",
+        "options": {
+            "A": "To avoid skewing the profile with one-time CUDA context initialization, memory allocator warmup, and kernel loading overhead, and to avoid profiling host-to-device transfer of the model weights (`model.to(device)`).",
+            "B": "Because `model.to(device)` can only be called inside a `with profile():` block.",
+            "C": "Because `ProfilerActivity.CUDA` deletes the model after the first run.",
+            "D": "Because `dummy_input` must be on CPU during GPU profiling."
+        },
+        "correct": ["A"],
+        "explanation": "Moving `device_model = model.to(device)` outside the `with profile(...)` block ensures parameter transfer time is not mixed into inference profiling, and warming up CUDA ensures one-time allocator/driver initialization does not dominate the captured trace.",
+        "option_explanations": {
+            "A": "Correct. Placing `model.to(device)` and warmup outside the profiled region isolates model inference execution.",
+            "B": "Incorrect. `model.to(device)` should be called before `with profile(...)`.",
+            "C": "Incorrect. The profiler never deletes models.",
+            "D": "Incorrect. Both model and input must be on the GPU device to profile GPU inference."
+        },
+        "competency": "Isolate model execution from device transfer and initialization overhead during profiling",
+        "source": "modules/module_9_amp_profiler_benchmarking_etc/3_profiling.ipynb"
+    },
+    {
+        "id": "PTCA-P-103",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C4: PyTorch Profiler & Bottleneck Analysis",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "Look at the code below from `3_profiling.ipynb`. If `dummy_input` is originally on CPU and you call `device_model(dummy_input.to(device))` **inside** the `with profile(...)` block, what extra operation will appear in the profiler trace?",
+        "code": "device_model = model.to('cuda')\nwith profile(activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA]) as prof:\n    device_model(dummy_input.to('cuda'))",
+        "options": {
+            "A": "An `aten::to` / `aten::_to_copy` host-to-device memory copy (`Memcpy HtoD`) transferring `dummy_input` from CPU RAM to GPU memory.",
+            "B": "An `ncclAllReduce` collective communication call.",
+            "C": "A `torch.optim.SGD.step` call.",
+            "D": "An `aten::backward` pass."
+        },
+        "correct": ["A"],
+        "explanation": "Because `dummy_input.to('cuda')` is evaluated inside the `with profile(...)` context manager, the profiler captures the host-to-device copy (`aten::to` -> `aten::_to_copy` -> `Memcpy HtoD`) alongside the forward pass of `device_model`.",
+        "option_explanations": {
+            "A": "Correct. `.to('cuda')` inside the profiled block records the CPU-to-GPU tensor copy in the profile.",
+            "B": "Incorrect. `ncclAllReduce` only occurs in multi-GPU distributed training.",
+            "C": "Incorrect. No optimizer is called in this inference snippet.",
+            "D": "Incorrect. No `.backward()` call is executed."
+        },
+        "competency": "Identify host-to-device data transfer operations (aten::to / _to_copy) in profiler traces",
+        "source": "modules/module_9_amp_profiler_benchmarking_etc/3_profiling.ipynb"
+    },
+    {
+        "id": "PTCA-P-104",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C4: PyTorch Profiler & Bottleneck Analysis",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "Which parameter in `torch.profiler.profile(...)` records the Python source file name and line number call stack for every profiled PyTorch operator so you can trace which line of your model code triggered an expensive kernel?",
+        "code": "with profile(\n    activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA],\n    with_stack=True\n) as prof:\n    model(inputs)",
+        "options": {
+            "A": "`with_stack=True`",
+            "B": "`row_limit=10`",
+            "C": "`enabled=False`",
+            "D": "`sort_by=\"stack\"`"
+        },
+        "correct": ["A"],
+        "explanation": "Passing `with_stack=True` to `torch.profiler.profile` captures the Python call stack (file, line number, and function name) for each operator event, allowing you to group by stack (`group_by_stack_n`) or inspect call stacks in the trace viewer.",
+        "option_explanations": {
+            "A": "Correct. `with_stack=True` records Python source call stacks for operator invocations.",
+            "B": "Incorrect. `row_limit` is an argument to `.table()`, not `profile()`.",
+            "C": "Incorrect. `enabled=False` disables profiling.",
+            "D": "Incorrect. `sort_by` is a `.table()` argument, not a `profile()` parameter."
+        },
+        "competency": "Capture Python call stacks in torch.profiler using with_stack=True",
+        "source": "modules/module_9_amp_profiler_benchmarking_etc/3_profiling.ipynb & torch.profiler docs"
+    },
+    {
+        "id": "PTCA-P-105",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C4: PyTorch Profiler & Bottleneck Analysis",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "In a `prof.key_averages().table(...)` output, what does the `# of Calls` column represent?",
+        "code": "# Name                 Self CPU %   Self CPU   CPU total   # of Calls\n# aten::conv2d              0.25%     45.0us     12.30ms            5\n# aten::relu                1.10%    198.0us    198.00us            7",
+        "options": {
+            "A": "The total number of times that specific operator (such as `aten::conv2d` or `aten::relu`) was invoked during the profiled execution window.",
+            "B": "The number of GPUs installed in the server.",
+            "C": "The number of epochs remaining in the training loop.",
+            "D": "The batch size of `dummy_input`."
+        },
+        "correct": ["A"],
+        "explanation": "As described in `3_profiling.ipynb` ('Call Count: Number of times each operation was executed'), the `# of Calls` column in `prof.key_averages().table()` reports how many times each operator was called during the profiled region (e.g., 5 `Conv2d` layers in AlexNet = 5 calls to `aten::conv2d` in a single forward pass).",
+        "option_explanations": {
+            "A": "Correct. `# of Calls` is the invocation count of that operator across the profiled run.",
+            "B": "Incorrect. It counts operator invocations, not GPUs.",
+            "C": "Incorrect. The profiler does not know how many future epochs exist outside its context.",
+            "D": "Incorrect. Batch size is a tensor dimension (`Input Shapes`), not `# of Calls`."
+        },
+        "competency": "Interpret Call Count (# of Calls) in PyTorch Profiler summary tables",
+        "source": "modules/module_9_amp_profiler_benchmarking_etc/3_profiling.ipynb"
+    },
+    {
+        "id": "PTCA-P-106",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C4: PyTorch Profiler & Bottleneck Analysis",
+        "difficulty": "Hard",
+        "multi_select": False,
+        "stem": "Suppose you profile a GPU model and only include `activities=[ProfilerActivity.CPU]` (omitting `ProfilerActivity.CUDA`). What will the profiler table show for GPU operations?",
+        "code": "model = model.to('cuda')\nx = x.to('cuda')\nwith profile(activities=[ProfilerActivity.CPU]) as prof:\n    model(x)\nprint(prof.key_averages().table(sort_by=\"cpu_time_total\", row_limit=10))",
+        "options": {
+            "A": "It will only show host-side CPU operator dispatch and `cudaLaunchKernel` times, without recording actual GPU kernel execution durations (`CUDA time` columns will be absent).",
+            "B": "It will raise a `RuntimeError` because a CUDA model cannot run when `ProfilerActivity.CUDA` is omitted.",
+            "C": "It will automatically move the model back to CPU.",
+            "D": "It will accurately measure GPU hardware kernel execution time in `Self CUDA`."
+        },
+        "correct": ["A"],
+        "explanation": "If `ProfilerActivity.CUDA` is omitted when profiling a model running on `'cuda'`, the profiler only records host CPU events (ATen operator dispatch and `cudaLaunchKernel` driver calls) and does not subscribe to CUPTI device kernel callbacks, so actual GPU kernel execution times are not captured.",
+        "option_explanations": {
+            "A": "Correct. Without `ProfilerActivity.CUDA`, only CPU-side dispatch and kernel launch latencies are recorded.",
+            "B": "Incorrect. The code runs without error; it simply only collects CPU activity.",
+            "C": "Incorrect. The model stays on `'cuda'`.",
+            "D": "Incorrect. Capturing GPU device kernel execution time requires `ProfilerActivity.CUDA`."
+        },
+        "competency": "Include both ProfilerActivity.CPU and ProfilerActivity.CUDA when profiling GPU workloads",
+        "source": "modules/module_9_amp_profiler_benchmarking_etc/3_profiling.ipynb"
+    },
+    {
+        "id": "PTCA-P-107",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C4: PyTorch Profiler & Bottleneck Analysis",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "When using `torch.profiler.profile` with a `schedule`, what callback can you pass to `on_trace_ready` to automatically export trace files for TensorBoard visualization at the end of each active recording cycle?",
+        "code": "with profile(\n    activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA],\n    schedule=torch.profiler.schedule(wait=1, warmup=1, active=3, repeat=2),\n    on_trace_ready=torch.profiler.tensorboard_trace_handler('./log/resnet')\n) as prof:\n    ...",
+        "options": {
+            "A": "`torch.profiler.tensorboard_trace_handler('./log/dir')`",
+            "B": "`torch.optim.lr_scheduler.CosineAnnealingLR`",
+            "C": "`torch.cuda.empty_cache`",
+            "D": "`torch.nn.utils.clip_grad_norm_`"
+        },
+        "correct": ["A"],
+        "explanation": "`on_trace_ready` accepts a callable invoked at the end of every `active` phase in a scheduled profiling run. `torch.profiler.tensorboard_trace_handler(dir_name)` automatically saves the trace JSON files in the structure expected by the PyTorch Profiler TensorBoard plugin.",
+        "option_explanations": {
+            "A": "Correct. `tensorboard_trace_handler` is the built-in `on_trace_ready` callback for saving scheduled traces.",
+            "B": "Incorrect. `CosineAnnealingLR` is a learning rate scheduler.",
+            "C": "Incorrect. `empty_cache` frees unused cached GPU memory and does not accept the `prof` instance to save traces.",
+            "D": "Incorrect. `clip_grad_norm_` clips parameter gradients."
+        },
+        "competency": "Use on_trace_ready and tensorboard_trace_handler with scheduled profiling runs",
+        "source": "modules/module_9_amp_profiler_benchmarking_etc/3_profiling.ipynb & torch.profiler docs"
+    },
+    {
+        "id": "PTCA-P-108",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C4: PyTorch Profiler & Bottleneck Analysis",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "In `3_profiling.ipynb`, how is the profiler dynamically configured to support NVIDIA GPUs (`cuda`), Intel GPUs (`xpu`), or fallback to `cpu`?",
+        "code": "activities = [ProfilerActivity.CPU]\nif torch.cuda.is_available():\n    activities.append(ProfilerActivity.CUDA)\n    sort_by = \"cuda_time_total\"\n    device = 'cuda'\nelif torch.xpu.is_available():\n    activities.append(ProfilerActivity.XPU)\n    sort_by = \"xpu_time_total\"\n    device = 'xpu'\nelse:\n    sort_by = \"cpu_time_total\"\n    device = \"cpu\"",
+        "options": {
+            "A": "It starts with `[ProfilerActivity.CPU]`, appends `ProfilerActivity.CUDA` or `ProfilerActivity.XPU` depending on hardware availability, and sets `sort_by` to `\"cuda_time_total\"`, `\"xpu_time_total\"`, or `\"cpu_time_total\"` accordingly.",
+            "B": "It removes `ProfilerActivity.CPU` whenever a GPU is present because CPU and GPU activities cannot be profiled together.",
+            "C": "It appends all three (`CPU`, `CUDA`, `XPU`) unconditionally even on a CPU-only laptop.",
+            "D": "It sorts by `\"mps_time_total\"` when `torch.cuda.is_available()` is True."
+        },
+        "correct": ["A"],
+        "explanation": "As shown in Step 3 of `3_profiling.ipynb`, `activities` always includes `ProfilerActivity.CPU` (to correlate host operator launches with device kernels) and conditionally appends `ProfilerActivity.CUDA` or `ProfilerActivity.XPU`, matching `sort_by` to the active accelerator.",
+        "option_explanations": {
+            "A": "Correct. Keeping `ProfilerActivity.CPU` while appending the available accelerator activity (`CUDA` or `XPU`) allows full host-to-device correlation.",
+            "B": "Incorrect. `ProfilerActivity.CPU` is kept alongside `CUDA` or `XPU`.",
+            "C": "Incorrect. Appending `CUDA` or `XPU` occurs only when the respective hardware is available.",
+            "D": "Incorrect. CUDA devices sort by `\"cuda_time_total\"` (or `\"self_cuda_time_total\"`)."
+        },
+        "competency": "Write portable multi-device profiling code across CPU, CUDA, and XPU",
+        "source": "modules/module_9_amp_profiler_benchmarking_etc/3_profiling.ipynb"
+    },
+    {
+        "id": "PTCA-P-109",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C4: PyTorch Profiler & Bottleneck Analysis",
+        "difficulty": "Hard",
+        "multi_select": False,
+        "stem": "When inspecting a Chrome trace (`detailed_trace.json`) generated with `activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA]`, how do you trace which CPU ATen operator (e.g., `aten::addmm`) launched a specific GPU kernel on the CUDA stream row?",
+        "code": "with profile(activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA]) as prof:\n    model(dummy_input.to('cuda'))\nprof.export_chrome_trace(\"detailed_trace.json\")",
+        "options": {
+            "A": "The Chrome trace includes flow arrows (`cuda_runtime` / `LaunchKernel` correlation links) connecting the CPU `aten::...` -> `cudaLaunchKernel` span on the CPU thread row to the corresponding asynchronous kernel execution span on the GPU stream row.",
+            "B": "CPU and GPU events are always aligned at the exact same nanosecond timestamp because CUDA execution is synchronous.",
+            "C": "Chrome trace files only contain CPU events and never show GPU kernels.",
+            "D": "You must manually match them by guessing based on alphabetical order."
+        },
+        "correct": ["A"],
+        "explanation": "Because GPU kernels execute asynchronously after the CPU enqueues them, a GPU kernel span appears later on the timeline than the CPU `aten::` operator that launched it. Collecting both `ProfilerActivity.CPU` and `ProfilerActivity.CUDA` records correlation IDs that render as flow arrows in `chrome://tracing` / Perfetto from the CPU `cudaLaunchKernel` call to the GPU kernel.",
+        "option_explanations": {
+            "A": "Correct. CPU-to-GPU launch correlation links connect the host `aten::` / `cudaLaunchKernel` event to the asynchronous GPU stream kernel.",
+            "B": "Incorrect. Because CUDA is asynchronous, GPU kernels often execute after the CPU launch call has already returned.",
+            "C": "Incorrect. With `ProfilerActivity.CUDA`, GPU stream tracks and kernels are included in the Chrome trace.",
+            "D": "Incorrect. Correlation IDs link the exact launch event to the GPU kernel deterministically."
+        },
+        "competency": "Correlate CPU operator launches with asynchronous GPU kernels in Chrome trace timelines",
+        "source": "modules/module_9_amp_profiler_benchmarking_etc/3_profiling.ipynb"
+    },
+    {
+        "id": "PTCA-P-110",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C4: PyTorch Profiler & Bottleneck Analysis",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "If a profiler table shows that `aten::item` or `cudaStreamSynchronize` accounts for a huge percentage of `Self CPU time` in the middle of your model's `forward()` pass, what is the performance issue?",
+        "code": "# Profiler output:\n# Name                     Self CPU %    Self CPU\n# aten::item                   48.2%      18.50ms\n# cudaStreamSynchronize        48.1%      18.46ms",
+        "options": {
+            "A": "The model's `forward()` pass is calling `.item()` (or `.cpu()`, `print(tensor)`, or Python `if tensor:`) on a GPU tensor, forcing the CPU to block and wait for all queued GPU kernels to finish (`cudaStreamSynchronize`) instead of queueing kernels asynchronously.",
+            "B": "The GPU has too much free memory.",
+            "C": "`DataLoader` has too many `num_workers`.",
+            "D": "The learning rate is too small."
+        },
+        "correct": ["A"],
+        "explanation": "When `.item()` is called on a CUDA tensor, the CPU must wait (`cudaStreamSynchronize`) for the GPU to finish all pending kernels up to that tensor and copy the scalar back over PCIe. In the profiler, all that waiting time shows up as massive `Self CPU` time inside `cudaStreamSynchronize` / `aten::item`.",
+        "option_explanations": {
+            "A": "Correct. `.item()` forces a host-device synchronization stall (`cudaStreamSynchronize`), stalling CPU kernel dispatch.",
+            "B": "Incorrect. Free GPU memory does not cause synchronization stalls.",
+            "C": "Incorrect. `DataLoader` workers do not cause `aten::item` inside `forward()`.",
+            "D": "Incorrect. Learning rate scalar values do not affect `cudaStreamSynchronize` latency."
+        },
+        "competency": "Diagnose CPU-GPU synchronization stalls (aten::item / cudaStreamSynchronize) in profiler output",
+        "source": "modules/module_9_amp_profiler_benchmarking_etc/3_profiling.ipynb & LFD2003"
+    },
+    {
+        "id": "PTCA-P-111",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C4: PyTorch Profiler & Bottleneck Analysis",
+        "difficulty": "Easy",
+        "multi_select": False,
+        "stem": "In `prof.key_averages().table(sort_by=\"cpu_time_total\", row_limit=10)`, what does `row_limit=10` control?",
+        "code": "print(prof.key_averages().table(sort_by=\"cpu_time_total\", row_limit=10))",
+        "options": {
+            "A": "It limits the printed summary table to at most the top 10 operator rows (sorted by `cpu_time_total`) so the output remains concise and focused on the biggest bottlenecks.",
+            "B": "It stops the model after executing 10 layers.",
+            "C": "It restricts the input tensor to 10 rows.",
+            "D": "It limits the profiler to 10 milliseconds of recording."
+        },
+        "correct": ["A"],
+        "explanation": "`row_limit=10` truncates the formatted ASCII table returned by `.table(...)` to the top 10 rows according to the chosen `sort_by` metric, making it easy to read the primary performance bottlenecks.",
+        "option_explanations": {
+            "A": "Correct. `row_limit=10` displays only the top 10 rows in the formatted profiler table.",
+            "B": "Incorrect. `.table()` is called after model execution has already completed.",
+            "C": "Incorrect. It does not modify tensor shapes.",
+            "D": "Incorrect. It formats the output table, not the recording duration."
+        },
+        "competency": "Format profiler summary tables using sort_by and row_limit",
+        "source": "modules/module_9_amp_profiler_benchmarking_etc/3_profiling.ipynb"
+    },
+    {
+        "id": "PTCA-P-112",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C4: PyTorch Profiler & Bottleneck Analysis",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "Can multiple `record_function` context managers be nested inside one another (for example, an outer `\"training_step\"` wrapping inner `\"forward_pass\"` and `\"backward_pass\"` regions)?",
+        "code": "with profile(activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA]) as prof:\n    with record_function(\"training_step\"):\n        with record_function(\"forward_pass\"):\n            out = model(x)\n            loss = loss_fn(out, y)\n        with record_function(\"backward_pass\"):\n            loss.backward()",
+        "options": {
+            "A": "Yes; `record_function` scopes nest hierarchically in both the timeline trace and the summary table (where `\"training_step\"`'s Total Time includes the child `\"forward_pass\"` and `\"backward_pass\"` regions).",
+            "B": "No; nesting `record_function` raises a `RuntimeError: nested profiling forbidden`.",
+            "C": "No; the inner `record_function` overwrites and deletes the outer `record_function`.",
+            "D": "Yes, but only if `profile_memory=False`."
+        },
+        "correct": ["A"],
+        "explanation": "`record_function` uses RAII/context-manager semantics that naturally form a call tree hierarchy. In Chrome traces (`chrome://tracing`), nested `record_function` blocks appear as stacked horizontal bars, and in `key_averages()`, the outer block's Total Time encompasses its nested child blocks.",
+        "option_explanations": {
+            "A": "Correct. `record_function` regions can be nested arbitrarily to represent hierarchical stages of training or inference.",
+            "B": "Incorrect. Nesting `record_function` is fully supported and idiomatic.",
+            "C": "Incorrect. Both outer and inner regions are preserved.",
+            "D": "Incorrect. Nested `record_function` blocks work with `profile_memory=True` as well."
+        },
+        "competency": "Use nested record_function context managers for hierarchical bottleneck analysis",
+        "source": "modules/module_9_amp_profiler_benchmarking_etc/3_profiling.ipynb"
+    }
+]
+
+print(f"Loaded {len(questions_c4)} C4 questions.")
+
+questions_c5 = [
+    {
+        "id": "PTCA-P-113",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C5: Distributed Training Fundamentals",
+        "difficulty": "Easy",
+        "multi_select": True,
+        "stem": "According to `distributed_training.ipynb`, what are the THREE primary reasons why distributed training is needed in deep learning? (Select 3)",
+        "code": "",
+        "options": {
+            "A": "Large models may exceed the memory capacity of a single GPU, requiring multiple GPUs to hold and train the model.",
+            "B": "Leveraging multiple GPUs on a single node or across multiple nodes in a cluster results in better utilization of available hardware resources.",
+            "C": "Dividing the training workload and data across multiple GPUs speeds up training and significantly reduces total training wall-clock time.",
+            "D": "PyTorch does not allow training any neural network on a single GPU or CPU."
+        },
+        "correct": ["A", "B", "C"],
+        "explanation": "As listed in `distributed_training.ipynb` under 'Why we need distributed training?': (1) Large models may not fit on a single GPU, (2) distributed training leverages multiple GPUs on a single node or cluster for better hardware utilization, and (3) dividing training across GPUs results in faster training and saves time.",
+        "option_explanations": {
+            "A": "Correct. Models exceeding single-GPU VRAM require multi-GPU sharding/distribution.",
+            "B": "Correct. Distributed training utilizes all available GPUs across a node or cluster.",
+            "C": "Correct. Parallelizing training across GPUs accelerates throughput and reduces training time.",
+            "D": "Incorrect. PyTorch supports single-GPU and CPU training out of the box."
+        },
+        "competency": "Explain the core motivations for distributed training in PyTorch",
+        "source": "modules/module_8_basics_of_distributed/distributed_training.ipynb"
+    },
+    {
+        "id": "PTCA-P-114",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C5: Distributed Training Fundamentals",
+        "difficulty": "Easy",
+        "multi_select": False,
+        "stem": "Even on a **single machine** with multiple GPUs, why does PyTorch recommend using `DistributedDataParallel` (DDP) over legacy `DataParallel` (DP)?",
+        "code": "# Single node with 4 GPUs:\n# Why prefer DistributedDataParallel (DDP) over DataParallel (DP)?",
+        "options": {
+            "A": "DP uses a single Python process with multi-threading (suffering from Python GIL contention, per-step model replication overhead, and an unbalanced master-GPU gather bottleneck), whereas DDP spawns one independent process per GPU and uses fast collective communication (`all-reduce`).",
+            "B": "DP can only run on CPU, whereas DDP runs on GPU.",
+            "C": "DP shards optimizer states across nodes, whereas DDP only uses 1 GPU.",
+            "D": "DP requires `torchrun`, whereas DDP does not use `torch.distributed`."
+        },
+        "correct": ["A"],
+        "explanation": "As noted in `distributed_training.ipynb` and LFD2003 Ch. 5, `DataParallel` (DP) has poor performance compared to `DistributedDataParallel` (DDP) because DP is single-process multi-threaded (bottlenecked by the Python Global Interpreter Lock and GPU 0 gather/scatter overhead), whereas DDP is multi-process (one process per GPU) and synchronizes gradients efficiently via `torch.distributed` collective communications.",
+        "option_explanations": {
+            "A": "Correct. DDP's multi-process architecture avoids Python GIL contention and uses balanced collective gradient synchronization.",
+            "B": "Incorrect. Both DP and DDP target multi-GPU training.",
+            "C": "Incorrect. FSDP shards optimizer states; DP is single-node only and DDP uses multiple GPUs.",
+            "D": "Incorrect. DDP uses `torch.distributed` and is typically launched with `torchrun`."
+        },
+        "competency": "Compare DataParallel (DP) vs DistributedDataParallel (DDP) on a single multi-GPU node",
+        "source": "modules/module_8_basics_of_distributed/distributed_training.ipynb & LFD2003 Ch. 5"
+    },
+    {
+        "id": "PTCA-P-115",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C5: Distributed Training Fundamentals",
+        "difficulty": "Easy",
+        "multi_select": False,
+        "stem": "How does `DistributedDataParallel` (DDP) synchronize training across multiple GPUs during each iteration?",
+        "code": "from torch.nn.parallel import DistributedDataParallel as DDP\nddp_model = DDP(model, device_ids=[local_rank])",
+        "options": {
+            "A": "Each GPU process holds a full replica of the model, processes a distinct shard of the training batch in parallel, computes local gradients during `backward()`, averages those gradients across all GPUs via `torch.distributed` collective communications (`all-reduce`), and then each replica executes the identical `optimizer.step()`.",
+            "B": "Only GPU 0 computes gradients and then copies the updated model weights to all other GPUs after every epoch.",
+            "C": "Each GPU trains on the exact same mini-batch data without ever communicating gradients.",
+            "D": "DDP splits the layers of the model sequentially so GPU 0 only holds Layer 1 and GPU 1 only holds Layer 2."
+        },
+        "correct": ["A"],
+        "explanation": "As explained in `distributed_training.ipynb`, in DDP the model is replicated across GPUs and each replica receives a different subset of training data. During the backward pass, each GPU calculates different local gradients; DDP synchronizes and averages these gradients across all processes using collective communications (`all-reduce`) from `torch.distributed`, ensuring every model replica has the exact same averaged gradients before applying the optimization step.",
+        "option_explanations": {
+            "A": "Correct. DDP replicates the model, feeds distinct data shards, averages gradients via collective `all-reduce` during `backward()`, and updates all replicas identically.",
+            "B": "Incorrect. Every GPU computes gradients on its own data shard and updates its own replica after `all-reduce`.",
+            "C": "Incorrect. Without gradient communication and distinct data shards, multi-GPU training would be redundant.",
+            "D": "Incorrect. Splitting layers sequentially across GPUs is Pipeline Parallelism, not DDP."
+        },
+        "competency": "Explain the forward, backward, all-reduce gradient averaging, and optimizer step workflow of DDP",
+        "source": "modules/module_8_basics_of_distributed/distributed_training.ipynb"
+    },
+    {
+        "id": "PTCA-P-116",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C5: Distributed Training Fundamentals",
+        "difficulty": "Easy",
+        "multi_select": False,
+        "stem": "How does `FullyShardedDataParallel` (FSDP) differ from `DistributedDataParallel` (DDP), and when should you choose FSDP over DDP?",
+        "code": "from torch.distributed.fsdp import FullyShardedDataParallel as FSDP",
+        "options": {
+            "A": "Unlike DDP (which replicates the full model on each GPU), FSDP shards (partitions) the model's parameters, gradients, and optimizer states across GPUs to drastically reduce per-GPU memory footprint—making FSDP the right choice when a model is too large to fit into a single GPU's memory, at the cost of higher communication overhead.",
+            "B": "FSDP replicates the model 4 times on each GPU and has zero communication overhead compared to DDP.",
+            "C": "DDP is used when a model is too large for a single GPU, whereas FSDP only works for models under 1 MB.",
+            "D": "FSDP only shards the training dataset and never shards model parameters or optimizer states."
+        },
+        "correct": ["A"],
+        "explanation": "As stated in `distributed_training.ipynb`: 'Unlike DDP which replicates model across multiple GPUs, the FSDP allows partitioning or sharding model's parameters, gradients and optimizer states among multiple GPUs. This helps reduce its memory footprint and support models with sizes beyond the memory capacity of a single GPU device. However, as you would expect, FSDP results into more communication overhead over using DDP. Use FSDP when your model is too big to fit into a single GPU memory.'",
+        "option_explanations": {
+            "A": "Correct. FSDP shards parameters, gradients, and optimizer states across GPUs to fit models larger than single-GPU VRAM, trading off additional communication overhead.",
+            "B": "Incorrect. FSDP shards states (reducing memory) and incurs more communication overhead (all-gather + reduce-scatter) than DDP.",
+            "C": "Incorrect. DDP requires the entire model, gradients, and optimizer states to fit on each individual GPU.",
+            "D": "Incorrect. Both DDP and FSDP shard data across GPUs; FSDP additionally shards parameters, gradients, and optimizer states."
+        },
+        "competency": "Contrast FullyShardedDataParallel (FSDP) with DistributedDataParallel (DDP) in memory and communication trade-offs",
+        "source": "modules/module_8_basics_of_distributed/distributed_training.ipynb"
+    },
+    {
+        "id": "PTCA-P-117",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C5: Distributed Training Fundamentals",
+        "difficulty": "Easy",
+        "multi_select": False,
+        "stem": "Which function in `torch.distributed` must be called in each worker process before wrapping a model with `DistributedDataParallel` (DDP) or `FullyShardedDataParallel` (FSDP)?",
+        "code": "import torch.distributed as dist\n\n# Initialize the distributed communication group:\ndist.init_process_group(backend=\"nccl\")",
+        "options": {
+            "A": "`torch.distributed.init_process_group(backend=\"nccl\")`",
+            "B": "`torch.cuda.synchronize()`",
+            "C": "`torch.compile(backend=\"nccl\")`",
+            "D": "`torch.nn.DataParallel.init()`"
+        },
+        "correct": ["A"],
+        "explanation": "Before using any collective operations or wrapping a module in `DistributedDataParallel` / `FullyShardedDataParallel`, each distributed worker process must initialize the default process group via `torch.distributed.init_process_group(backend=...)`.",
+        "option_explanations": {
+            "A": "Correct. `dist.init_process_group(backend=...)` establishes the communication group across all participating ranks.",
+            "B": "Incorrect. `torch.cuda.synchronize()` synchronizes local GPU streams, not multi-process distributed ranks.",
+            "C": "Incorrect. `torch.compile` is the graph compiler, not the distributed process group initializer.",
+            "D": "Incorrect. `DataParallel` does not use `torch.distributed` process groups."
+        },
+        "competency": "Initialize distributed training using torch.distributed.init_process_group",
+        "source": "modules/module_8_basics_of_distributed/distributed_training.ipynb & LFD2003 Ch. 5"
+    },
+    {
+        "id": "PTCA-P-118",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C5: Distributed Training Fundamentals",
+        "difficulty": "Easy",
+        "multi_select": False,
+        "stem": "When calling `torch.distributed.init_process_group(backend=...)`, which communication backend is recommended for distributed training on **NVIDIA CUDA GPUs**, and which backend is standard for **CPU-only** distributed processes?",
+        "code": "import torch.distributed as dist\n\nbackend = \"nccl\" if torch.cuda.is_available() else \"gloo\"\ndist.init_process_group(backend=backend)",
+        "options": {
+            "A": "`\"nccl\"` for NVIDIA CUDA GPUs, and `\"gloo\"` for CPUs.",
+            "B": "`\"gloo\"` for CUDA GPUs only, and `\"triton\"` for CPUs.",
+            "C": "`\"mps\"` for multi-node Linux clusters.",
+            "D": "`\"sqlite\"` for GPU collective communication."
+        },
+        "correct": ["A"],
+        "explanation": "In `torch.distributed`, `\"nccl\"` (NVIDIA Collective Communications Library) provides highly optimized GPU-to-GPU collective operations (over NVLink and InfiniBand/RoCE) and is the recommended backend for CUDA GPU training, while `\"gloo\"` is the standard backend for CPU distributed training.",
+        "option_explanations": {
+            "A": "Correct. Use `\"nccl\"` for CUDA GPU distributed training and `\"gloo\"` for CPU distributed training.",
+            "B": "Incorrect. `\"triton\"` is a compiler language, not a `torch.distributed` communication backend.",
+            "C": "Incorrect. `\"mps\"` is Apple's single-device Metal backend, not a multi-node collective backend.",
+            "D": "Incorrect. `\"sqlite\"` is a database engine, not a communication backend."
+        },
+        "competency": "Select the appropriate torch.distributed backend (nccl vs gloo)",
+        "source": "modules/module_8_basics_of_distributed/distributed_training.ipynb & LFD2003 Ch. 5"
+    },
+    {
+        "id": "PTCA-P-119",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C5: Distributed Training Fundamentals",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "In a distributed training job running across **2 nodes (machines)** where each node has **4 GPUs** (1 process per GPU), what are the values of `WORLD_SIZE`, `RANK`, and `LOCAL_RANK`?",
+        "code": "import os\nworld_size = int(os.environ[\"WORLD_SIZE\"])\nrank = int(os.environ[\"RANK\"])\nlocal_rank = int(os.environ[\"LOCAL_RANK\"])",
+        "options": {
+            "A": "`WORLD_SIZE` is `8` (total processes across all nodes), `RANK` ranges from `0` to `7` (unique global process ID), and `LOCAL_RANK` ranges from `0` to `3` on each node (process/GPU index within that specific machine).",
+            "B": "`WORLD_SIZE` is `2`, `RANK` is `4`, and `LOCAL_RANK` is `8`.",
+            "C": "`WORLD_SIZE`, `RANK`, and `LOCAL_RANK` are all equal to `1` on every process.",
+            "D": "`LOCAL_RANK` ranges from `0` to `7` and `RANK` is always `0`."
+        },
+        "correct": ["A"],
+        "explanation": "With 2 nodes $\\times$ 4 GPUs/node = 8 total processes:\n- `WORLD_SIZE` = `8` (total number of participating processes)\n- `RANK` $\\in \\{0, 1, 2, 3, 4, 5, 6, 7\\}$ (global rank across the entire cluster)\n- `LOCAL_RANK` $\\in \\{0, 1, 2, 3\\}$ (local GPU/process index on each individual machine).",
+        "option_explanations": {
+            "A": "Correct. `WORLD_SIZE=8` total processes, global `RANK` in `0..7`, and per-node `LOCAL_RANK` in `0..3`.",
+            "B": "Incorrect. `WORLD_SIZE` is total processes (`8`), not node count (`2`).",
+            "C": "Incorrect. Each process has a distinct `RANK` and `LOCAL_RANK`.",
+            "D": "Incorrect. `RANK` is the global ID (`0..7`), whereas `LOCAL_RANK` is the node-local ID (`0..3`)."
+        },
+        "competency": "Distinguish WORLD_SIZE, RANK, and LOCAL_RANK in multi-node distributed training",
+        "source": "modules/module_8_basics_of_distributed/distributed_training.ipynb & LFD2003 Ch. 5"
+    },
+    {
+        "id": "PTCA-P-120",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C5: Distributed Training Fundamentals",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "When using `DistributedDataParallel` (DDP), how do you ensure that each GPU process receives a **non-overlapping shard** of the training `Dataset` during each epoch?",
+        "code": "from torch.utils.data import DataLoader\nfrom torch.utils.data.distributed import DistributedSampler\n\nsampler = DistributedSampler(dataset, shuffle=True)\nloader = DataLoader(dataset, batch_size=32, sampler=sampler, shuffle=False)",
+        "options": {
+            "A": "Pass a `DistributedSampler(dataset)` to `DataLoader(..., sampler=sampler)` (with `shuffle=False` on `DataLoader`) and call `sampler.set_epoch(epoch)` at the start of each epoch.",
+            "B": "Set `shuffle=True` on `DataLoader` without any sampler; `DataLoader` automatically partitions data across nodes.",
+            "C": "Manually delete 75% of the files on disk before each epoch.",
+            "D": "Pass `DistributedDataParallel` directly into `Dataset.__init__()`."
+        },
+        "correct": ["A"],
+        "explanation": "`torch.utils.data.distributed.DistributedSampler` partitions the dataset indices into `world_size` disjoint shards so each `rank` trains on a unique subset of the data (`1 / world_size` of the dataset per epoch). Calling `sampler.set_epoch(epoch)` at the beginning of each epoch seeds the random permutation with the epoch number so shuffling varies across epochs while remaining synchronized across ranks.",
+        "option_explanations": {
+            "A": "Correct. `DistributedSampler` partitions dataset indices across ranks and `sampler.set_epoch(epoch)` ensures proper per-epoch shuffling.",
+            "B": "Incorrect. Without `DistributedSampler`, every DDP process iterates over the entire dataset redundantly.",
+            "C": "Incorrect. `DistributedSampler` shards indices in memory without touching disk files.",
+            "D": "Incorrect. `DistributedDataParallel` wraps an `nn.Module`, not a `Dataset`."
+        },
+        "competency": "Partition training data across DDP ranks using DistributedSampler and set_epoch",
+        "source": "modules/module_8_basics_of_distributed/distributed_training.ipynb & LFD2003 Ch. 5"
+    },
+    {
+        "id": "PTCA-P-121",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C5: Distributed Training Fundamentals",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "What happens if you use `DistributedSampler(dataset, shuffle=True)` in a multi-epoch DDP training loop **without** calling `sampler.set_epoch(epoch)` at the beginning of each epoch?",
+        "code": "sampler = DistributedSampler(train_dataset, shuffle=True)\ntrain_loader = DataLoader(train_dataset, batch_size=64, sampler=sampler)\n\nfor epoch in range(num_epochs):\n    # Forgot sampler.set_epoch(epoch) here!\n    for x, y in train_loader:\n        ...",
+        "options": {
+            "A": "The `DistributedSampler` reuses the exact same random seed (`self.seed + 0`) on every epoch, causing the dataset to be shuffled in the identical order on every single epoch.",
+            "B": "PyTorch raises a `RuntimeError: epoch not set` on epoch 1.",
+            "C": "All GPUs receive empty batches on epoch 1.",
+            "D": "The model weights are reset to random values at the end of epoch 0."
+        },
+        "correct": ["A"],
+        "explanation": "`DistributedSampler` seeds its deterministic shuffle generator using `self.seed + self.epoch` (where `self.epoch` defaults to `0`) so all ranks agree on the global permutation before slicing their shard. If `sampler.set_epoch(epoch)` is omitted, `self.epoch` stays `0` forever and the exact same shuffle order is repeated every epoch.",
+        "option_explanations": {
+            "A": "Correct. Without `sampler.set_epoch(epoch)`, `self.epoch` remains `0` and identical shuffling occurs every epoch.",
+            "B": "Incorrect. No error is raised; it is a silent statistical pitfall.",
+            "C": "Incorrect. Batches are non-empty, just identically ordered across epochs.",
+            "D": "Incorrect. Model weights are unaffected by the sampler."
+        },
+        "competency": "Understand why sampler.set_epoch(epoch) is required for multi-epoch shuffling in DistributedSampler",
+        "source": "modules/module_8_basics_of_distributed/distributed_training.ipynb & LFD2003 Ch. 5"
+    },
+    {
+        "id": "PTCA-P-122",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C5: Distributed Training Fundamentals",
+        "difficulty": "Easy",
+        "multi_select": False,
+        "stem": "Which standard PyTorch command-line launcher is used to spawn 4 distributed worker processes on a single node with 4 GPUs and automatically set `RANK`, `LOCAL_RANK`, and `WORLD_SIZE` environment variables?",
+        "code": "# Launch train.py across 4 GPUs on a single node:",
+        "options": {
+            "A": "`torchrun --nproc_per_node=4 train.py`",
+            "B": "`python --gpus=4 train.py`",
+            "C": "`pip run --ddp=4 train.py`",
+            "D": "`nvcc -o 4 train.py`"
+        },
+        "correct": ["A"],
+        "explanation": "`torchrun` is PyTorch's built-in elastic distributed launcher. Running `torchrun --nproc_per_node=4 train.py` spawns 4 processes on the node and populates `RANK`, `LOCAL_RANK`, `WORLD_SIZE`, `MASTER_ADDR`, and `MASTER_PORT` automatically.",
+        "option_explanations": {
+            "A": "Correct. `torchrun --nproc_per_node=4 train.py` launches 4 DDP/FSDP worker processes on the node.",
+            "B": "Incorrect. The standard `python` binary does not have a `--gpus` flag.",
+            "C": "Incorrect. `pip` is the Python package installer, not a distributed process launcher.",
+            "D": "Incorrect. `nvcc` is the NVIDIA CUDA C++ compiler."
+        },
+        "competency": "Launch multi-GPU distributed training scripts using torchrun",
+        "source": "modules/module_8_basics_of_distributed/distributed_training.ipynb & LFD2003 Ch. 5"
+    },
+    {
+        "id": "PTCA-P-123",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C5: Distributed Training Fundamentals",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "In a DDP training script with 4 GPU processes (`world_size = 4`), how should you save a model checkpoint (`torch.save(ddp_model.module.state_dict(), 'ckpt.pt')`) to avoid file corruption or redundant disk writes?",
+        "code": "if dist.get_rank() == 0:\n    torch.save(ddp_model.module.state_dict(), \"checkpoint.pt\")",
+        "options": {
+            "A": "Guard the `torch.save(...)` call with `if dist.get_rank() == 0:` (because all DDP replicas have identical synchronized weights, and having all 4 processes write to the same file path concurrently can corrupt the file).",
+            "B": "Have all 4 ranks write to `\"checkpoint.pt\"` simultaneously without synchronization.",
+            "C": "Save the checkpoint inside `Dataset.__getitem__`.",
+            "D": "Never save checkpoints in DDP because weights differ across ranks after `optimizer.step()`."
+        },
+        "correct": ["A"],
+        "explanation": "Because DDP synchronizes initial parameters on construction and averages gradients across all ranks on every step, every rank holds identical model weights after `optimizer.step()`. Guarding `torch.save(ddp_model.module.state_dict(), ...)` with `if rank == 0:` avoids race conditions and file corruption from multiple processes overwriting the same file simultaneously.",
+        "option_explanations": {
+            "A": "Correct. Only `rank == 0` needs to write the checkpoint in DDP, preventing concurrent write corruption.",
+            "B": "Incorrect. Concurrent writes to the same file path from multiple processes cause race conditions and corrupted checkpoints.",
+            "C": "Incorrect. `Dataset.__getitem__` loads data samples and has no access to the model.",
+            "D": "Incorrect. In DDP, all ranks maintain identical synchronized weights."
+        },
+        "competency": "Save checkpoints safely in DistributedDataParallel (DDP) from rank 0",
+        "source": "modules/module_8_basics_of_distributed/distributed_training.ipynb & LFD2003 Ch. 5"
+    },
+    {
+        "id": "PTCA-P-124",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C5: Distributed Training Fundamentals",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "In the correct initialization order for `DistributedDataParallel` (DDP) on a multi-GPU node, in what sequence should you: (1) construct the optimizer, (2) move `model` to `local_rank` GPU, and (3) wrap `model` in `DDP`?",
+        "code": "local_rank = int(os.environ[\"LOCAL_RANK\"])\ntorch.cuda.set_device(local_rank)\n# Order of operations:",
+        "options": {
+            "A": "First move `model = model.to(local_rank)`, then wrap `ddp_model = DDP(model, device_ids=[local_rank])`, and finally construct `optimizer = torch.optim.AdamW(ddp_model.parameters(), lr=1e-3)`.",
+            "B": "First wrap the CPU model in `DDP(model)`, then create the optimizer, and never move the model to GPU.",
+            "C": "Call `DDP` on the optimizer instead of the model (`DDP(optimizer)`).",
+            "D": "Create `DDP(model)` before calling `dist.init_process_group()`."
+        },
+        "correct": ["A"],
+        "explanation": "When setting up DDP on CUDA GPUs:\n1. Initialize the process group (`dist.init_process_group('nccl')`) and set the device (`torch.cuda.set_device(local_rank)`).\n2. Move the model to the target GPU (`model.to(local_rank)`).\n3. Wrap the model in `ddp_model = DDP(model, device_ids=[local_rank])` (which broadcasts initial weights from rank 0 and registers autograd communication hooks).\n4. Instantiate the optimizer using `ddp_model.parameters()`.",
+        "option_explanations": {
+            "A": "Correct. Move the model to its assigned GPU before wrapping with `DDP`, and initialize the optimizer on `ddp_model.parameters()`.",
+            "B": "Incorrect. For CUDA DDP with `device_ids=[local_rank]`, the model must already be on that CUDA device before calling `DDP(model, ...)`.",
+            "C": "Incorrect. `DDP` wraps an `nn.Module`, not an `Optimizer`.",
+            "D": "Incorrect. `DDP` requires the process group to be initialized first."
+        },
+        "competency": "Order device placement, DDP wrapping, and optimizer creation correctly",
+        "source": "modules/module_8_basics_of_distributed/distributed_training.ipynb & LFD2003 Ch. 5"
+    },
+    {
+        "id": "PTCA-P-125",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C5: Distributed Training Fundamentals",
+        "difficulty": "Hard",
+        "multi_select": False,
+        "stem": "How does `DistributedDataParallel` (DDP) overlap gradient communication (`all-reduce`) with backward pass computation to maximize multi-GPU scaling efficiency?",
+        "code": "ddp_model = DDP(model, device_ids=[local_rank])\nloss = loss_fn(ddp_model(x), y)\nloss.backward()  # When does all-reduce happen?",
+        "options": {
+            "A": "DDP groups parameters into buckets in reverse parameter order and registers autograd hooks so that as soon as all gradients in a bucket are ready during `loss.backward()`, an asynchronous `all-reduce` for that bucket launches immediately while `backward()` continues computing gradients for earlier layers.",
+            "B": "DDP waits until `optimizer.step()` is completely finished before communicating any gradients.",
+            "C": "DDP communicates gradients during `optimizer.zero_grad()` before the forward pass.",
+            "D": "DDP copies all activations to CPU RAM and emails them between processes."
+        },
+        "correct": ["A"],
+        "explanation": "Rather than waiting for the entire `loss.backward()` pass to finish before starting communication, DDP organizes model parameters into gradient buckets (in reverse layer order matching backpropagation) and triggers asynchronous `all-reduce` collectives per bucket as soon as that bucket's gradients are computed, overlapping network communication with ongoing backward computation.",
+        "option_explanations": {
+            "A": "Correct. DDP buckets gradients and fires asynchronous `all-reduce` collectives via autograd hooks during `loss.backward()`, overlapping communication with backward compute.",
+            "B": "Incorrect. Gradients must be averaged *before* `optimizer.step()` updates the weights.",
+            "C": "Incorrect. Gradients do not exist during `zero_grad()`.",
+            "D": "Incorrect. NCCL communicates directly between GPUs."
+        },
+        "competency": "Explain how DDP overlaps bucketed all-reduce communication with backward computation",
+        "source": "modules/module_8_basics_of_distributed/distributed_training.ipynb & DDP docs"
+    },
+    {
+        "id": "PTCA-P-126",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C5: Distributed Training Fundamentals",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "If each of the 4 GPUs in a DDP training job is configured with a per-GPU `batch_size = 32` in its `DataLoader`, what is the **effective global batch size** processed across the cluster per optimizer step?",
+        "code": "# world_size = 4 GPUs\nsampler = DistributedSampler(dataset)\nloader = DataLoader(dataset, batch_size=32, sampler=sampler)",
+        "options": {
+            "A": "`128` ($\\text{per\\_gpu\\_batch\\_size} \\times \\text{world\\_size} = 32 \\times 4$).",
+            "B": "`8` ($32 / 4$).",
+            "C": "`32` (because 3 of the 4 GPUs discard their batches).",
+            "D": "`1024` ($32^2$)."
+        },
+        "correct": ["A"],
+        "explanation": "In DDP, each of the `world_size` (`4`) processes loads an independent mini-batch of size `32` (`batch_size=32`) from its `DistributedSampler` shard and averages the resulting gradients before `optimizer.step()`. Thus, each optimizer step is mathematically equivalent to training on an effective global batch size of $32 \\times 4 = 128$.",
+        "option_explanations": {
+            "A": "Correct. Effective global batch size equals `per_gpu_batch_size * world_size` ($32 \\times 4 = 128$).",
+            "B": "Incorrect. Each GPU loads `batch_size=32`, so total samples per step multiply by `world_size`.",
+            "C": "Incorrect. All 4 GPUs process distinct shards and contribute to the averaged gradient.",
+            "D": "Incorrect. It scales linearly with `world_size`, not quadratically."
+        },
+        "competency": "Calculate effective global batch size in DistributedDataParallel (DDP)",
+        "source": "modules/module_8_basics_of_distributed/distributed_training.ipynb & LFD2003 Ch. 5"
+    },
+    {
+        "id": "PTCA-P-127",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C5: Distributed Training Fundamentals",
+        "difficulty": "Easy",
+        "multi_select": False,
+        "stem": "Which function should be called at the very end of a distributed PyTorch script to cleanly tear down the communication group and release distributed resources?",
+        "code": "import torch.distributed as dist\n\n# At end of training script:\ndist.destroy_process_group()",
+        "options": {
+            "A": "`torch.distributed.destroy_process_group()`",
+            "B": "`torch.cuda.empty_cache()`",
+            "C": "`optimizer.zero_grad()`",
+            "D": "`torch.distributed.init_process_group()`"
+        },
+        "correct": ["A"],
+        "explanation": "`torch.distributed.destroy_process_group()` cleanly closes all active process groups and releases NCCL/Gloo network sockets and shared memory resources before the worker processes exit.",
+        "option_explanations": {
+            "A": "Correct. `dist.destroy_process_group()` tears down the distributed process group cleanly.",
+            "B": "Incorrect. `empty_cache()` frees unused cached GPU memory blocks, not distributed process groups.",
+            "C": "Incorrect. `zero_grad()` clears parameter gradients.",
+            "D": "Incorrect. `init_process_group()` initializes the group at startup."
+        },
+        "competency": "Clean up distributed training resources using dist.destroy_process_group()",
+        "source": "modules/module_8_basics_of_distributed/distributed_training.ipynb & LFD2003 Ch. 5"
+    },
+    {
+        "id": "PTCA-P-128",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C5: Distributed Training Fundamentals",
+        "difficulty": "Hard",
+        "multi_select": False,
+        "stem": "During a `FullyShardedDataParallel` (FSDP) forward and backward pass, how are a layer's sharded parameters reconstructed for computation and synchronized afterward?",
+        "code": "fsdp_model = FSDP(model)\nout = fsdp_model(x)\nloss = loss_fn(out, y)\nloss.backward()",
+        "options": {
+            "A": "Before a layer executes in the forward (and backward) pass, FSDP performs an `all-gather` collective across GPUs to materialize the full parameters for that layer, frees the non-local parameter shards immediately after the layer finishes, and uses `reduce-scatter` during the backward pass to average and shard gradients across GPUs.",
+            "B": "FSDP never communicates during the forward or backward pass and only communicates once at the end of training.",
+            "C": "FSDP keeps a full unsharded copy of every layer's parameters permanently in GPU memory at all times, identical to DDP.",
+            "D": "FSDP computes matrix multiplications without ever gathering the missing weight shards."
+        },
+        "correct": ["A"],
+        "explanation": "Because FSDP shards parameters, gradients, and optimizer states across ranks (ZeRO-3 style), each GPU only stores $1/N$ of a layer's parameters at rest. Just before a layer's forward (and backward) computation, FSDP runs `all-gather` to assemble the full weights for that FSDP unit, discards the unowned shards right after the layer completes to keep peak memory low, and runs `reduce-scatter` during `backward()` so each GPU receives its $1/N$ shard of the averaged gradients.",
+        "option_explanations": {
+            "A": "Correct. FSDP uses per-unit `all-gather` (followed by freeing non-local shards) in forward/backward and `reduce-scatter` for sharded gradients, explaining both its memory savings and its extra communication overhead over DDP.",
+            "B": "Incorrect. FSDP communicates via `all-gather` and `reduce-scatter` on every step.",
+            "C": "Incorrect. Keeping full parameters permanently on every GPU is DDP, not FSDP.",
+            "D": "Incorrect. Computing the layer output requires gathering the full weight tensor temporarily."
+        },
+        "competency": "Explain the all-gather and reduce-scatter communication lifecycle of FSDP",
+        "source": "modules/module_8_basics_of_distributed/distributed_training.ipynb & FSDP docs"
+    },
+    {
+        "id": "PTCA-P-129",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C5: Distributed Training Fundamentals",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "Suppose your model has a total memory footprint (parameters + gradients + optimizer states + activations) of **12 GB**, and you have a single server with **4 GPUs**, each having **24 GB** of VRAM. According to `distributed_training.ipynb`, should you use `DistributedDataParallel` (DDP) or `FullyShardedDataParallel` (FSDP)?",
+        "code": "# Model + training state = 12 GB\n# Hardware = 4 x 24 GB GPUs",
+        "options": {
+            "A": "Use **DDP**, because the entire model and training state easily fit into a single 24 GB GPU, and DDP scales training across the 4 GPUs with lower communication overhead than FSDP.",
+            "B": "Use **DataParallel (DP)** because DP is always faster than DDP.",
+            "C": "Use **FSDP** because DDP cannot run on a single node with 4 GPUs.",
+            "D": "Neither DDP nor FSDP can be used when a model fits on a single GPU."
+        },
+        "correct": ["A"],
+        "explanation": "As directly advised in `distributed_training.ipynb`:\n- 'Use DDP if your model fits in a single GPU but you want to easily scale up training using multiple GPUs available on a same or multiple nodes.'\n- 'Use FSDP when your model is too big to fit into a single GPU memory.'\nSince 12 GB fits comfortably inside each 24 GB GPU, DDP avoids FSDP's extra `all-gather` communication overhead.",
+        "option_explanations": {
+            "A": "Correct. When the model fits on a single GPU, DDP is the recommended choice to scale throughput with minimal communication overhead.",
+            "B": "Incorrect. DP has inferior performance due to GIL contention and single-GPU gather bottlenecks.",
+            "C": "Incorrect. DDP works on both single-node multi-GPU and multi-node setups.",
+            "D": "Incorrect. DDP is specifically designed for models that fit on a single GPU."
+        },
+        "competency": "Select between DDP and FSDP based on model memory footprint and GPU VRAM capacity",
+        "source": "modules/module_8_basics_of_distributed/distributed_training.ipynb"
+    },
+    {
+        "id": "PTCA-P-130",
+        "domain": "Performance & Optimization",
+        "domain_code": "C",
+        "subtopic": "C5: Distributed Training Fundamentals",
+        "difficulty": "Medium",
+        "multi_select": False,
+        "stem": "When a model is wrapped with `ddp_model = DistributedDataParallel(model, device_ids=[local_rank])`, how do you access custom attributes or methods defined on the underlying `model` (or its unprefixed `state_dict()`)?",
+        "code": "class CustomNet(nn.Module):\n    def custom_helper(self):\n        return 42\n\nddp_model = DDP(CustomNet().to(local_rank), device_ids=[local_rank])\n# Call custom_helper() on the underlying model:",
+        "options": {
+            "A": "Access the underlying `nn.Module` via `ddp_model.module` (e.g., `ddp_model.module.custom_helper()` and `ddp_model.module.state_dict()`).",
+            "B": "Access `ddp_model._orig_mod`.",
+            "C": "Call `ddp_model.unshard()`.",
+            "D": "Custom methods are permanently deleted when wrapping a model in `DDP`."
+        },
+        "correct": ["A"],
+        "explanation": "`DistributedDataParallel` stores the wrapped `nn.Module` in its `.module` attribute (`ddp_model.module`). Accessing `ddp_model.module` lets you invoke custom methods on your model class or retrieve `ddp_model.module.state_dict()` without the `'module.'` key prefix.",
+        "option_explanations": {
+            "A": "Correct. `ddp_model.module` references the underlying `nn.Module` wrapped by `DDP`.",
+            "B": "Incorrect. `_orig_mod` is used by `torch.compile`, whereas `DDP` uses `.module`.",
+            "C": "Incorrect. `DDP` does not shard parameters and has no `.unshard()` method.",
+            "D": "Incorrect. The underlying `nn.Module` and all its methods remain intact on `ddp_model.module`."
+        },
+        "competency": "Access the underlying nn.Module via ddp_model.module in DistributedDataParallel",
+        "source": "modules/module_8_basics_of_distributed/distributed_training.ipynb & DDP docs"
+    }
+]
+
+all_questions = questions_c1 + questions_c2 + questions_c3 + questions_c4 + questions_c5
+
+assert len(all_questions) == 130, f"Expected 130 questions, got {len(all_questions)}"
+
+# Validate schema and uniqueness
+seen_ids = set()
+seen_stems = set()
+code_count = 0
+for idx, q in enumerate(all_questions, start=1):
+    expected_id = f"PTCA-P-{idx:03d}"
+    assert q["id"] == expected_id, f"ID mismatch at index {idx}: {q['id']} != {expected_id}"
+    assert q["domain"] == "Performance & Optimization"
+    assert q["domain_code"] == "C"
+    assert q["difficulty"] in ("Easy", "Medium", "Hard")
+    assert isinstance(q["multi_select"], bool)
+    assert q["stem"] and q["stem"] not in seen_stems, f"Duplicate or empty stem at {expected_id}"
+    seen_stems.add(q["stem"])
+    seen_ids.add(q["id"])
+    assert set(q["options"].keys()) == {"A", "B", "C", "D"}
+    assert all(len(v.strip()) > 0 for v in q["options"].values())
+    assert set(q["option_explanations"].keys()) == {"A", "B", "C", "D"}
+    assert all(len(v.strip()) > 0 for v in q["option_explanations"].values())
+    assert len(q["correct"]) >= 1
+    if q["multi_select"]:
+        assert len(q["correct"]) >= 2, f"Multi-select {expected_id} has < 2 correct answers"
+    else:
+        assert len(q["correct"]) == 1, f"Single-select {expected_id} has != 1 correct answers"
+    assert q["explanation"].strip()
+    assert q["competency"].strip()
+    assert q["source"].strip()
+    if q["code"].strip():
+        code_count += 1
+
+out_path = "/Users/batakkh/Documents/notes/PyTorch-Associate-Training-main/ptca_exam_prep/data/domain_c.json"
+with open(out_path, "w", encoding="utf-8") as f:
+    json.dump(all_questions, f, indent=2, ensure_ascii=False)
+
+print(f"Successfully generated {len(all_questions)} questions to {out_path} ({code_count}/130 = {code_count/130:.1%} with code snippets).")
